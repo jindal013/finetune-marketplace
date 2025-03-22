@@ -14,9 +14,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Upload } from "lucide-react"
+import { getStorage, ref, uploadBytes } from "firebase/storage"
+import { initializeApp } from "firebase/app"
 
 import * as React from "react"
- 
+
 import {
   Select,
   SelectContent,
@@ -26,14 +28,70 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { json } from "stream/consumers"
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBz0XRFZjisjl2m2kjefJwt5ydxUc5FabA",
+  authDomain: "finetunemarketplace-1323f.firebaseapp.com",
+  databaseURL: "https://finetunemarketplace-1323f-default-rtdb.firebaseio.com",
+  projectId: "finetunemarketplace-1323f",
+  storageBucket: "finetunemarketplace-1323f.firebasestorage.app",
+  messagingSenderId: "163760710265",
+  appId: "1:163760710265:web:676a8e7c5116ad6661eaa8",
+  measurementId: "G-2HQ21J89S1"
+};
+
+
+const app = initializeApp(firebaseConfig)
+const storage = getStorage(app)
+
 
 export function JobPopup() {
   const [file, setFile] = React.useState<File | null>(null)
 
+  const submitQuery = async () => {
+
+    if (!file) {
+      alert("Please upload a training file")
+      return
+    }
+
+    const config = {
+      jobName: (document.getElementById("name") as HTMLInputElement)?.value,
+      modelId: (document.getElementById("model_id") as HTMLInputElement)?.value,
+      precision: (document.getElementById("precision") as HTMLInputElement)?.value,
+      modulesLimit: Number((document.getElementById("modules_limit") as HTMLInputElement)?.value),
+      loraRank: Number((document.getElementById("r") as HTMLInputElement)?.value),
+      loraAlpha: Number((document.getElementById("lora_alpha") as HTMLInputElement)?.value),
+      batchSize: Number((document.getElementById("batch_size") as HTMLInputElement)?.value),
+      optimizer: (document.getElementById("optim") as HTMLInputElement)?.value,
+      warmupSteps: Number((document.getElementById("warmup_steps") as HTMLInputElement)?.value),
+      maxSteps: Number((document.getElementById("max_steps") as HTMLInputElement)?.value),
+      evalSteps: Number((document.getElementById("eval_steps") as HTMLInputElement)?.value),
+      learningRate: Number((document.getElementById("learning_rate") as HTMLInputElement)?.value),
+      loggingSteps: Number((document.getElementById("logging_steps") as HTMLInputElement)?.value),
+    }
+
+    const jsonConfig = new File([JSON.stringify(config)], "config.json", { type: "application/json" })
+    const jsonFile = new File([file], "train.txt", { type: "text/plain" })
+
+    try {
+      const storageRefConfig = ref(storage, `train/${jsonConfig.name}`)
+      await uploadBytes(storageRefConfig, jsonConfig)
+
+      const storageRefFile = ref(storage, `train/${jsonFile.name}`)
+      await uploadBytes(storageRefFile, jsonFile)
+
+      window.location.href = "/client";
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button 
+        <Button
           size="lg"
           className="text-lg px-8 py-6 shadow-lg transition-all hover:scale-105 hover:shadow-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
         >
@@ -62,60 +120,6 @@ export function JobPopup() {
             <Input id="model_id" placeholder="facebook/opt-350m" className="col-span-3" />
           </div>
 
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right font-medium">
-              Architecture
-            </Label>
-            <Select>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select an architecture" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Neural Networks</SelectLabel>
-                  <SelectItem value="densenet">DenseNet</SelectItem>
-                  <SelectItem value="alexnet">AlexNet</SelectItem>
-                  <SelectItem value="vggnet">VGGNet</SelectItem>
-                  <SelectItem value="resnet">ResNet</SelectItem>
-                  <SelectItem value="googlenet">GoogleNet</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="file" className="text-right font-medium">
-              Training Data
-            </Label>
-            <div className="col-span-3">
-              <label
-                htmlFor="file"
-                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 dark:hover:bg-gray-800 dark:bg-gray-700 dark:border-gray-600"
-              >
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload className="w-8 h-8 mb-3 text-gray-400" />
-                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    TXT file (MAX. 800MB)
-                  </p>
-                </div>
-                <Input 
-                  id="file" 
-                  type="file" 
-                  accept=".txt"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                />
-              </label>
-              {file && (
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  Selected file: {file.name}
-                </p>
-              )}
-            </div>
-          </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="precision" className="text-right font-medium">
@@ -217,25 +221,44 @@ export function JobPopup() {
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="output" className="text-right font-medium">
-              Output Directory
+            <Label htmlFor="file" className="text-right font-medium">
+              Training Data
             </Label>
-            <Input id="output" placeholder="./output" className="col-span-3" />
-          </div>
-
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="overwrite" className="text-right font-medium">
-              Overwrite
-            </Label>
-            <div className="col-span-3 flex items-center space-x-2">
-              <Switch id="overwrite" />
-              <Label htmlFor="overwrite">Allow overwriting existing files</Label>
+            <div className="col-span-3">
+              <label
+                htmlFor="file"
+                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 dark:hover:bg-gray-800 dark:bg-gray-700 dark:border-gray-600"
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Upload className="w-8 h-8 mb-3 text-gray-400" />
+                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    TXT file (MAX. 800MB)
+                  </p>
+                </div>
+                <Input
+                  id="file"
+                  type="file"
+                  accept=".txt"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                />
+              </label>
+              {file && (
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  Selected file: {file.name}
+                </p>
+              )}
             </div>
           </div>
 
+
+
         </div>
         <DialogFooter>
-          <Button type="submit">Submit Training Job</Button>
+          <Button type="submit" onClick={submitQuery}>Submit Training Job</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
