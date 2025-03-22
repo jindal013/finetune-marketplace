@@ -82,6 +82,8 @@ export function JobPopup() {
       const storageRefFile = ref(storage, `train/${jsonFile.name}`)
       await uploadBytes(storageRefFile, jsonFile)
 
+      // send post to trainer client 
+
       window.location.href = "/client";
     } catch (error) {
       console.log(error)
