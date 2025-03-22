@@ -7,35 +7,10 @@ import { BackloggedJobsTable, type BackloggedJob } from "./backlogged-jobs-table
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-const exampleBackloggedJobs: BackloggedJob[] = [
-  {
-    id: "1",
-    name: "BERT Fine-tuning",
-    client: "Client A",
-    status: "Pending",
-    date: "2024-03-20",
-    currentStep: 0,
-    totalSteps: 4
-  },
-  {
-    id: "2",
-    name: "GPT-2 Training",
-    client: "Client B",
-    status: "Done",
-    date: "2024-03-19",
-    currentStep: 3,
-    totalSteps: 3
-  },
-  {
-    id: "3",
-    name: "T5 Adaptation",
-    client: "Client C",
-    status: "Pending",
-    date: "2024-03-18",
-    currentStep: 0,
-    totalSteps: 5
-  }
-]
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+
+
 
 const terminalOutput = [
   "[2024-03-20 10:15:23] Starting model training process...",
@@ -54,7 +29,9 @@ const exampleModel = {
 }
 
 export default function TrainerHomePage() {
-  const router = useRouter()
+  const router = useRouter();
+  const exampleBackloggedJobs = useQuery(api.tasks.getJobs);
+  console.log(exampleBackloggedJobs);
 
   return (
     <div className="flex flex-col gap-8 p-8">
@@ -78,7 +55,7 @@ export default function TrainerHomePage() {
             <CardTitle>Backlogged Jobs</CardTitle>
           </CardHeader>
           <CardContent>
-            <BackloggedJobsTable data={exampleBackloggedJobs} />
+            <BackloggedJobsTable data={exampleBackloggedJobs || []} />
           </CardContent>
         </Card>
 
@@ -90,6 +67,12 @@ export default function TrainerHomePage() {
             <ScrollArea className="h-[300px] w-full rounded-md border p-4">
               <pre className="font-mono text-sm">
                 {terminalOutput}
+                {/* terminalOutput ={
+                  await {
+                    id: id
+                    logging: terminalOutput
+                  }
+                } */}
               </pre>
             </ScrollArea>
           </CardContent>
@@ -97,4 +80,4 @@ export default function TrainerHomePage() {
       </div>
     </div>
   )
-} 
+}

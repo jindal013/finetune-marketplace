@@ -55,14 +55,14 @@ export const columns: ColumnDef<BackloggedJob>[] = [
       const router = useRouter()
       return (
         <div className="flex items-center gap-4">
-          <div 
+          <div
             className="cursor-pointer hover:underline"
             onClick={() => router.push(`/jobs/${row.original.id}`)}
           >
             {row.getValue("name")}
           </div>
           {row.original.status === "Pending" && (
-            <Button 
+            <Button
               size="sm"
               onClick={(e) => {
                 e.stopPropagation()
@@ -203,4 +203,4 @@ export function BackloggedJobsTable({ data }: { data: BackloggedJob[] }) {
       </Table>
     </div>
   )
-} 
+}

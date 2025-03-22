@@ -16,6 +16,8 @@ import { Switch } from "@/components/ui/switch"
 import { Upload } from "lucide-react"
 import { getStorage, ref, uploadBytes } from "firebase/storage"
 import { initializeApp } from "firebase/app"
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 import * as React from "react"
 
@@ -45,9 +47,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 const storage = getStorage(app)
 
-
 export function JobPopup() {
   const [file, setFile] = React.useState<File | null>(null)
+  const createJob = useMutation(api.tasks.createJob)
 
   const submitQuery = async () => {
 
@@ -72,15 +74,23 @@ export function JobPopup() {
       loggingSteps: Number((document.getElementById("logging_steps") as HTMLInputElement)?.value),
     }
 
+    const random_num = Math.floor(Math.random() * 1000)
     const jsonConfig = new File([JSON.stringify(config)], "config.json", { type: "application/json" })
-    const jsonFile = new File([file], "train.txt", { type: "text/plain" })
+    const jsonFile = new File([file], "data.txt", { type: "text/plain" })
+
 
     try {
-      const storageRefConfig = ref(storage, `train/${jsonConfig.name}`)
+
+      const firebasePath = `train${random_num}`
+      const storageRefConfig = ref(storage, `${firebasePath}/${jsonConfig.name}`)
       await uploadBytes(storageRefConfig, jsonConfig)
 
-      const storageRefFile = ref(storage, `train/${jsonFile.name}`)
+      const storageRefFile = ref(storage, `${firebasePath}/${jsonFile.name}`)
       await uploadBytes(storageRefFile, jsonFile)
+
+
+      console.log('createintg job')
+      await createJob({ name: config.jobName, firebasePath: `${firebasePath}`, status: "queued" })
 
       window.location.href = "/client";
     } catch (error) {

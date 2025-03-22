@@ -19,16 +19,15 @@ import {
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 
 interface OngoingJobProps {
-  name: string
-  currentStep: number
-  totalSteps: number
+  jobId: string
 }
 
-export function OngoingJob({ name, currentStep, totalSteps }: OngoingJobProps) {
-  const progress = (currentStep / totalSteps) * 100
+export function OngoingJob({ jobId }: OngoingJobProps) {
+  // Use the jobId to fetch current progress from your API
+  const progress = 0.75; // This should come from your API
 
   const chartData = [
-    { 
+    {
       progress,
       fill: "var(--color-progress)"
     }
@@ -42,13 +41,27 @@ export function OngoingJob({ name, currentStep, totalSteps }: OngoingJobProps) {
   } satisfies ChartConfig
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">{name}</h1>
+    <div className="min-h-screen p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Training in Progress</CardTitle>
+          <CardDescription>Your model is currently being trained</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4">
+            <TrendingUp className="h-6 w-6 text-primary" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Progress</p>
+              <p className="text-sm text-muted-foreground">{Math.round(progress * 100)}% Complete</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="flex flex-col">
           <CardHeader className="items-center pb-0">
             <CardTitle>Training Progress</CardTitle>
-            <CardDescription>Step {currentStep} of {totalSteps}</CardDescription>
+            <CardDescription>Step {Math.round(progress * 100)}% Complete</CardDescription>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -86,7 +99,7 @@ export function OngoingJob({ name, currentStep, totalSteps }: OngoingJobProps) {
                               y={viewBox.cy}
                               className="fill-foreground text-3xl font-bold"
                             >
-                              {`${Math.round(progress)}%`}
+                              {`${Math.round(progress * 100)}%`}
                             </tspan>
                             <tspan
                               x={viewBox.cx}
@@ -109,11 +122,11 @@ export function OngoingJob({ name, currentStep, totalSteps }: OngoingJobProps) {
               Training at optimal speed <TrendingUp className="h-4 w-4" />
             </div>
             <div className="leading-none text-muted-foreground">
-              Estimated completion in {Math.round((totalSteps - currentStep) / 2)} minutes
+              Estimated completion in {Math.round((1 - progress) * 10)} minutes
             </div>
           </CardFooter>
         </Card>
       </div>
     </div>
   )
-} 
+}

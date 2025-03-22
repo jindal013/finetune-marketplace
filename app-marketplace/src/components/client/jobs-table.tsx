@@ -56,9 +56,9 @@ export const columns: ColumnDef<Job>[] = [
     cell: ({ row }) => {
       const router = useRouter()
       return (
-        <div 
+        <div
           className="cursor-pointer hover:underline"
-          onClick={() => router.push(`/jobs/${row.original.id}`)}
+          onClick={() => router.push(`/client/jobs/${row.original.id}`)}
         >
           {row.getValue("name")}
         </div>
@@ -173,4 +173,4 @@ export function JobsTable({ data }: { data: Job[] }) {
       </Table>
     </div>
   )
-} 
+}

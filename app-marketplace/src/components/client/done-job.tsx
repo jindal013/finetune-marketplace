@@ -1,9 +1,10 @@
 "use client"
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Input } from "@/components/ui/input"
+import { Download } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useState } from "react"
 
 interface DoneJobProps {
@@ -11,78 +12,132 @@ interface DoneJobProps {
   modelId: string
   architecture: string
   trainingFile: string
-  modelParams: Record<string, string | number>
+  modelParams: Record<string, any>
+}
+
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
 }
 
 export function DoneJob({ name, modelId, architecture, trainingFile, modelParams }: DoneJobProps) {
-  const [message, setMessage] = useState("")
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+
+  const sendMessage = () => {
+    if (!input.trim()) return
+
+    const newMessages = [
+      ...messages,
+      { role: 'user', content: input },
+      { role: 'assistant', content: 'This is a sample response. Connect to your API for real responses.' }
+    ]
+    setMessages(newMessages)
+    setInput('')
+  }
 
   return (
-    <div className="min-h-screen p-6">
-      <h1 className="text-3xl font-bold mb-4">{name}</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Training Configuration</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <dl className="space-y-4">
-                <div className="flex justify-between">
-                  <dt className="font-medium">Model ID</dt>
-                  <dd className="text-muted-foreground">{modelId}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="font-medium">Architecture</dt>
-                  <dd className="text-muted-foreground">{architecture}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="font-medium">Training File</dt>
-                  <dd className="text-muted-foreground">{trainingFile}</dd>
-                </div>
-                <div className="border-t my-4" />
-                {Object.entries(modelParams).map(([key, value]) => (
-                  <div key={key} className="flex justify-between">
-                    <dt className="font-medium">{key}</dt>
-                    <dd className="text-muted-foreground">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full">
-                Download Weights
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-        
+    <div className="grid grid-cols-2 gap-4">
+      {/* Left Panel - Model Information */}
+      <div className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Chat with Model</CardTitle>
-            <CardDescription>Test your trained model</CardDescription>
+            <CardTitle>Model Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[400px] w-full rounded-md border p-4">
-              {/* Chat messages will go here */}
-            </ScrollArea>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Parameter</TableHead>
+                  <TableHead>Value</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium">Architecture</TableCell>
+                  <TableCell>{architecture}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Learning Rate</TableCell>
+                  <TableCell>{modelParams.learningRate}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Batch Size</TableCell>
+                  <TableCell>{modelParams.batchSize}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Epochs</TableCell>
+                  <TableCell>{modelParams.epochs}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Optimizer</TableCell>
+                  <TableCell>{modelParams.optimizer}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Accuracy</TableCell>
+                  <TableCell>{modelParams.accuracy}%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Loss</TableCell>
+                  <TableCell>{modelParams.loss}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium">Training File</TableCell>
+                  <TableCell>{trainingFile}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+            <Button className="w-full mt-6" onClick={() => window.open(modelParams.weightsUrl)}>
+              <Download className="mr-2 h-4 w-4" />
+              Download Model Weights
+            </Button>
           </CardContent>
-          <CardFooter>
-            <div className="flex w-full gap-2">
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message..."
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault()
-                    // Handle send message
-                  }
-                }}
-              />
-              <Button>Send</Button>
+        </Card>
+      </div>
+
+      {/* Right Panel - Chatbot Interface */}
+      <div>
+        <Card className="h-full">
+          <CardHeader>
+            <CardTitle>Chat with Your Model</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col h-[600px]">
+              <ScrollArea className="flex-grow mb-4 p-4 border rounded-md bg-muted/10">
+                <div className="space-y-4">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div
+                        className={`rounded-lg px-4 py-2 max-w-[80%] ${
+                          message.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        {message.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                  placeholder="Ask your model something..."
+                  className="flex-grow p-2 border rounded-md"
+                />
+                <Button onClick={sendMessage}>Send</Button>
+              </div>
             </div>
-          </CardFooter>
+          </CardContent>
         </Card>
       </div>
     </div>
