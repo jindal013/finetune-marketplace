@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 
 // Add custom keyframes and animations
 const customStyles = `
@@ -142,6 +143,12 @@ const customStyles = `
 `;
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleNavigate = () => {
+    router.push("/dashboard");
+  };
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-gradient-to-br from-black via-gray-900 to-black text-white">
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
@@ -169,7 +176,10 @@ export default function Home() {
             <div className="border-top-right"></div>
             <div className="border-bottom-left"></div>
             <div className="border-bottom-right"></div>
-            <button className="relative w-full h-full py-4 px-6 bg-black text-white border border-gray-800 rounded-md transition-colors duration-300 text-lg font-medium z-10 cursor-pointer text-center flex items-center justify-center">
+            <button
+              onClick={handleNavigate}
+              className="relative w-full h-full py-4 px-6 bg-black text-white border border-gray-800 rounded-md transition-colors duration-300 text-lg font-medium z-10 cursor-pointer text-center flex items-center justify-center"
+            >
               Trainer
             </button>
           </div>
@@ -179,7 +189,10 @@ export default function Home() {
             <div className="border-top-right"></div>
             <div className="border-bottom-left"></div>
             <div className="border-bottom-right"></div>
-            <button className="relative w-full h-full py-4 px-6 bg-black text-white border border-gray-800 rounded-md transition-colors duration-300 text-lg font-medium z-10 cursor-pointer text-center flex items-center justify-center">
+            <button
+              onClick={handleNavigate}
+              className="relative w-full h-full py-4 px-6 bg-black text-white border border-gray-800 rounded-md transition-colors duration-300 text-lg font-medium z-10 cursor-pointer text-center flex items-center justify-center"
+            >
               Client
             </button>
           </div>
