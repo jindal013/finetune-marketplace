@@ -2,12 +2,15 @@
 
 import { redirect } from "next/navigation"
 
+type UserRole = "client" | "trainer"
+
 export default function HomePage() {
   // TODO: Add authentication check here
   const isAuthenticated = true // Replace with actual auth check
+  const userRole: UserRole = "client" // Replace with actual user role check
   
   if (isAuthenticated) {
-    redirect("/dashboard")
+    redirect(userRole === "trainer" ? "/trainer" : "/client")
   }
 
   return (
@@ -30,4 +33,4 @@ export default function HomePage() {
       </div>
     </div>
   )
-}
+} 

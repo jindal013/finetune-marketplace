@@ -1,9 +1,9 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { CurrentJob } from "@/components/client-1next-job"
-import { ProgressChart } from "@/components/client-2progress-chart"
-import { EvaluationChart } from "@/components/client-3eval-chart"
+import { CurrentJob } from "@/components/client/client-1next-job"
+import { ProgressChart } from "@/components/client/client-2progress-chart"
+import { EvaluationChart } from "@/components/client/client-3eval-chart"
 import { JobPopup } from "./job-popup"
 import { JobsTable, type Job } from "./jobs-table"
 import { useState } from "react"

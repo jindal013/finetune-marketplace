@@ -1,9 +1,9 @@
 "use client"
 
 import { useParams } from "next/navigation"
-import { OngoingJob } from "@/components/ongoing-job"
-import { ErrorJob } from "@/components/error-job"
-import { DoneJob } from "@/components/done-job"
+import { OngoingJob } from "@/components/client/ongoing-job"
+import { ErrorJob } from "@/components/client/error-job"
+import { DoneJob } from "@/components/trainer/done-job"
 
 // Example data - replace with real data from your backend
 const jobs = [
