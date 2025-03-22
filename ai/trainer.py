@@ -9,11 +9,14 @@ from dotenv import load_dotenv
 from peft import LoraConfig, PeftModel, get_peft_model
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from trl import SFTTrainer
+import random
+import csv
+import datasets as d
 
 load_dotenv()
 
 
-firebaseConfig ={
+firebaseConfig = {
   "apiKey": "AIzaSyBz0XRFZjisjl2m2kjefJwt5ydxUc5FabA",
   "authDomain": "finetunemarketplace-1323f.firebaseapp.com",
   "databaseURL": "https://finetunemarketplace-1323f-default-rtdb.firebaseio.com/",
@@ -22,7 +25,6 @@ firebaseConfig ={
   "messagingSenderId": "163760710265",
   "appId": "1:163760710265:web:676a8e7c5116ad6661eaa8",
   "measurementId": "G-2HQ21J89S1",
-  # "serviceAccount": "serviceAccount.json"
 }
 
 storage = pyrebase.initialize_app(firebaseConfig).storage()
@@ -48,7 +50,7 @@ class TrainingConfig:
 
 def get_configs_from_firebase(path: str):
   local_path = "./config.json"
-  storage.child(f"{path}/config.json").download(local_path)
+  storage.child(f"{path}/config.json").download(local_path, "config.json")
 
   with open(local_path, "r") as f:
     config_data = json.load(f)
@@ -73,21 +75,55 @@ def get_configs_from_firebase(path: str):
   return training_config
 
 def get_data_from_firebase(path: str):
+
   local_path = "./data.txt"
-  storage.child(f"{path}/data.txt").download(local_path)
+  storage.child(f"{path}/data.txt").download(local_path, "data.txt")
 
   with open(local_path, "r") as f:
-    data = f.readlines()
+    data = f.read()
 
-  return data
+  data_size = 200
+  data = data.strip("\n\n") .replace("\n", " ").replace(" ", " ")
+  data = [data[i:i+data_size] for i in range(0, len(data), data_size)]
+
+  dataset = []
+  setence_length = 6
+  cutoff = 200
+  length = len(data)
+  for i in range(0, length, setence_length):
+    sentence = data[i:i + setence_length]
+    sentence = ' '.join(sentence)
+    if len(sentence) < cutoff:
+      continue
+
+    index = random.randint(cutoff, len(sentence))
+    input = sentence[:index]
+    output = sentence[index:]
+    instruction = """You are a chat completition model, please take time to think and complete the text below"""
+    dataset.append({
+      'instruction': instruction,
+      'input': input,
+      'output': output
+    })
+
+    path = "./dataset.csv"
+    with open(
+        path, mode="w", newline="", encoding="utf-8"
+    ) as file:
+      writer = csv.DictWriter(file, fieldnames=["instruction", "input", "output"])
+      writer.writeheader()
+      writer.writerows(dataset)
+
+  return path
 
 class ModelTrainer:
 
   def __init__(self, firebase_link: str):
 
     self.firebase_path = firebase_link
-    self.txt = get_data_from_firebase(firebase_link)
+    self.data_path = get_data_from_firebase(firebase_link)
     self.cfg = get_configs_from_firebase(firebase_link)
+    print(self.cfg)
     self.device = self._setup_device()
 
   def _setup_device(self):
@@ -125,7 +161,7 @@ class ModelTrainer:
     )
 
     self.model.gradient_checkpointing_enable()
-    self._setup_finetune_params()
+    self.lora_config = self._setup_finetune_params()
 
     print("\n")
     print(f"Model {self.cfg.model_id} loaded successfully on {self.device} @ {dp} precision.")
@@ -152,59 +188,41 @@ class ModelTrainer:
       task_type="CAUSAL_LM",
     )
 
-    self.lora_config = LoraConfig
     self.model = get_peft_model(self.model, lora_config)
+
+    return lora_config
+
+  def generate_prompt(self, data_point):
+    message =  [{
+            "role": "user",
+            "content": f"""{data_point["instruction"]} {data_point["input"]}"""
+            },
+        {
+            "role": "assistant",
+            "content": data_point["output"]
+            }
+            ]
+
+    prompt = self.tokenizer.apply_chat_template(message, tokenize=False)
+    tokenized_prompt = self.tokenizer(prompt, return_tensors="pt")
+
+    text = {
+        'prompt': prompt,
+        **tokenized_prompt
+    }
+
+    return text
 
   def _setup_dataset(self):
 
-    # Parse the text data into structured format
-    dataset = []
-    for line in self.txt:
-      try:
-        data_point = json.loads(line.strip())
-        dataset.append(data_point)
-      except json.JSONDecodeError:
-        continue  # Skip invalid lines
+    self.tokenizer.padding_side = 'right'
+    ds = d.load_dataset("csv", data_files=self.data_path)["train"]
+    ds = ds.map(lambda samples: self.generate_prompt(samples), batched=False)
+    ds = ds.shuffle(seed=seed)
+    ds = ds.train_test_split(test_size=self.cfg.test_size)
+    ds['test'] = ds['test'].shuffle(seed=seed).select(range(10))
 
-    # Split dataset
-    train_data, test_data = train_test_split(
-      dataset,
-      test_size=self.cfg.test_size,
-      random_state=seed
-    )
-
-    # If test set is too large, limit it
-    if len(test_data) > 10:
-      test_data = test_data[:10]
-
-    # Convert to datasets format
-    def format_as_prompt(examples):
-      if isinstance(examples, dict):  # Single example case
-        data_point = examples
-        message = [
-          {
-            "role": "user",
-            "content": f"{data_point.get('instruction', '')} {data_point.get('input', '')}"
-          },
-          {
-            "role": "assistant",
-            "content": data_point.get('output', '')
-          }
-        ]
-        prompt = self.tokenizer.apply_chat_template(message, tokenize=False)
-        return {"prompt": prompt}
-      else:  # Batch processing case
-        return {"prompt": [format_as_prompt(ex)["prompt"] for ex in examples]}
-
-    # Convert to dataset objects
-    train_dataset = datasets.Dataset.from_list(train_data)
-    test_dataset = datasets.Dataset.from_list(test_data)
-
-    # Apply formatting
-    train_dataset = train_dataset.map(format_as_prompt)
-    test_dataset = test_dataset.map(format_as_prompt)
-
-    return train_dataset, test_dataset
+    return ds['train'], ds['test']
 
   def train(self):
     self._setup_model()
@@ -238,12 +256,13 @@ class ModelTrainer:
       ),
     )
 
+    trainer.train()
+
     self.save_models(trainer)
 
   def save_models(self, trainer):
     new_model_path = "job/finetuned_models/"
     trainer.model.save_pretrained(new_model_path)
-    self.upload_to_firestore(new_model_path)
 
     merged_path = "job/merged_models/"
     merged_model = PeftModel.from_pretrained(self.model, new_model_path)
@@ -251,7 +270,8 @@ class ModelTrainer:
     merged_model.save_pretrained(merged_path)
     self.tokenizer.save_pretrained(merged_path)
 
-    self.upload_to_fireabse(merged_path)
+    print("uploading to firebase ...")
+    self.upload_to_firebase("./job")
 
   def upload_to_firebase(self, base_dir):
     directories = [base_dir]
@@ -266,10 +286,15 @@ class ModelTrainer:
           files.append(f"{current_dir}/{file}")
 
     for file in files:
-      storage.child(f"{self.firebase_path}/{file}").put(file)
+
+      file_firebase = file
+      if file.startswith("./"):
+        file_firebase = file[2:]
+
+      print(f"Uploading {file} to {file_firebase}")
+      storage.child(f"{self.firebase_path}/{file_firebase}").put(file)
 
 if __name__ == '__main__':
     print(torch.__version__)
-    storage.child("test3/test3.txt").put("./req.txt")
-    url = storage.child("test3/test3.txt").get_url("hello2")
-    print(url)
+    model = ModelTrainer("test")
+    model.train()
