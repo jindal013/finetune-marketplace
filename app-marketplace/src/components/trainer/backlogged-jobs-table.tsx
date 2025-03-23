@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,12 +12,12 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { ArrowUpDown } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useMutation } from "convex/react"
-import { api } from "../../../convex/_generated/api"
-import { Id } from "../../../convex/_generated/dataModel"
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { Id } from "../../../convex/_generated/dataModel";
 
 import {
   Table,
@@ -26,72 +26,79 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export type BackloggedJob = {
-  _id: string
-  name: string
-  status: "Queued" | "Training" | "Done"
-  date: string
-  firebasePath: string
-}
+  _id: string;
+  name: string;
+  status: "Queued" | "Training" | "Done";
+  date: string;
+  firebasePath: string;
+};
 
 interface BackloggedJobsTableProps {
-  data: BackloggedJob[]
-  variant?: 'client' | 'trainer'
+  data: BackloggedJob[];
+  variant?: "client" | "trainer";
 }
 function floatToDateTime(timestamp: number): string {
   const date = new Date(Math.floor(timestamp)); // Convert to milliseconds and create Date object
-  return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+  return date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
 }
 
-export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJobsTableProps) {
+export function BackloggedJobsTable({
+  data,
+  variant = "trainer",
+}: BackloggedJobsTableProps) {
   const updateStatus = useMutation(api.tasks.updateJob);
-  const router = useRouter()
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const router = useRouter();
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
-  async function sendPostRequest(id: string, firebasePath: string): Promise<void> {
+  async function sendPostRequest(
+    id: string,
+    firebasePath: string
+  ): Promise<void> {
     try {
       await updateStatus({
         id: id as Id<"tasks">,
-        status: "training"
+        status: "training",
       });
 
-      const response = await fetch('http://127.0.0.1:4200/train', {
-        method: 'POST',
+      const response = await fetch("http://127.0.0.1:4200/train", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type'
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
         },
-        body: JSON.stringify({ "firebase_path": firebasePath, "id": id}),
+        body: JSON.stringify({ firebase_path: firebasePath, id: id }),
       });
 
       if (!response.ok) {
-
         await updateStatus({
           id: id as Id<"tasks">,
-          status: "queued"
+          status: "queued",
         });
         alert("Failed to start training: " + response.statusText);
         return;
       }
 
       const data = await response.json();
-      console.log('Training started:', data);
+      console.log("Training started:", data);
       await updateStatus({
         id: id as Id<"tasks">,
-        status: "done"
+        status: "done",
       });
-
     } catch (error) {
-      console.error('Error starting training:', error);
+      console.error("Error starting training:", error);
       throw error;
     }
   }
@@ -102,6 +109,7 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
       header: ({ column }) => (
         <Button
           variant="ghost"
+          className="text-white hover:text-purple-300"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Job Name
@@ -125,9 +133,20 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
         const statusUpper = status.charAt(0).toUpperCase() + status.slice(1);
-        const variant = status === "Queued" ? "outline" :
-                       status === "Training" ? "secondary" : "default";
-        return <Badge variant={variant}>{statusUpper}</Badge>;
+
+        return (
+          <Badge
+            className={
+              status.toLowerCase() === "done"
+                ? "bg-purple-500/80 hover:bg-purple-600/80 text-white"
+                : status.toLowerCase() === "training"
+                  ? "bg-purple-400/80 hover:bg-purple-500/80 text-black"
+                  : "bg-purple-300/90 hover:bg-purple-400/80 text-black"
+            }
+          >
+            {statusUpper}
+          </Badge>
+        );
       },
     },
     {
@@ -135,6 +154,7 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
       header: ({ column }) => (
         <Button
           variant="ghost"
+          className="text-white hover:text-purple-300"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Date
@@ -146,7 +166,7 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
         return <span>{floatToDateTime(date)}</span>;
       },
     },
-  ]
+  ];
 
   const actionColumn: ColumnDef<BackloggedJob> = {
     accessorKey: "firebasePath",
@@ -159,7 +179,8 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
         return (
           <Button
             size="sm"
-            style={{ cursor: 'pointer' }}
+            className="bg-purple-300 hover:bg-purple-400 text-black"
+            style={{ cursor: "pointer" }}
             onClick={async (e) => {
               e.stopPropagation();
               try {
@@ -167,7 +188,10 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
                 console.log("Firebase path:", firebasePath);
                 await sendPostRequest(id, firebasePath);
               } catch (error: unknown) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                const errorMessage =
+                  error instanceof Error
+                    ? error.message
+                    : "Unknown error occurred";
                 alert("Failed to start training: " + errorMessage);
               }
             }}
@@ -178,9 +202,10 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
       }
       return null;
     },
-  }
+  };
 
-  const columns = variant === 'trainer' ? [...baseColumns, actionColumn] : baseColumns;
+  const columns =
+    variant === "trainer" ? [...baseColumns, actionColumn] : baseColumns;
 
   const table = useReactTable({
     data,
@@ -199,7 +224,7 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
       columnVisibility,
       rowSelection,
     },
-  })
+  });
 
   return (
     <div className="w-full">
@@ -245,5 +270,5 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

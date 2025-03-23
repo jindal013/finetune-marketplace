@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,9 +12,9 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { ArrowUpDown } from "lucide-react"
-import { useRouter } from "next/navigation"
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import {
   Table,
@@ -23,21 +23,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export type Job = {
-  id: string
-  name: string
-  architecture: string
-  status: "Done" | "Error" | "Ongoing"
-  trainingTime: string
-  trainer: string
-  date: string
-  currentStep?: number
-  totalSteps?: number
-}
+  id: string;
+  name: string;
+  architecture: string;
+  status: "Done" | "Error" | "Ongoing";
+  trainingTime: string;
+  trainer: string;
+  date: string;
+  currentStep?: number;
+  totalSteps?: number;
+};
 
 export const columns: ColumnDef<Job>[] = [
   {
@@ -51,10 +51,10 @@ export const columns: ColumnDef<Job>[] = [
           Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => {
-      const router = useRouter()
+      const router = useRouter();
       return (
         <div
           className="cursor-pointer hover:underline"
@@ -62,7 +62,7 @@ export const columns: ColumnDef<Job>[] = [
         >
           {row.getValue("name")}
         </div>
-      )
+      );
     },
   },
   {
@@ -77,20 +77,27 @@ export const columns: ColumnDef<Job>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const status = row.getValue("status") as string
+      const status = row.getValue("status") as string;
       return (
         <Badge
           variant={
             status === "Done"
               ? "secondary"
               : status === "Error"
-              ? "destructive"
-              : "default"
+                ? "destructive"
+                : "default"
+          }
+          className={
+            status === "Done"
+              ? "bg-purple-500/80 hover:bg-purple-700/80 text-white"
+              : status === "Error"
+                ? "bg-red-500/80 hover:bg-red-700/80 text-white"
+                : "bg-purple-400/80 hover:bg-purple-500/80 text-black"
           }
         >
           {status}
         </Badge>
-      )
+      );
     },
   },
   {
@@ -101,13 +108,16 @@ export const columns: ColumnDef<Job>[] = [
     accessorKey: "trainer",
     header: "Trainer",
   },
-]
+];
 
 export function JobsTable({ data }: { data: Job[] }) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
     data,
@@ -126,7 +136,7 @@ export function JobsTable({ data }: { data: Job[] }) {
       columnVisibility,
       rowSelection,
     },
-  })
+  });
 
   return (
     <div className="w-full">
@@ -172,5 +182,5 @@ export function JobsTable({ data }: { data: Job[] }) {
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

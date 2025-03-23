@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { TrendingUp } from "lucide-react"
+import { TrendingUp } from "lucide-react";
 import {
   Label,
   PolarGrid,
   PolarRadiusAxis,
   RadialBar,
   RadialBarChart,
-} from "recharts"
+} from "recharts";
 import {
   Card,
   CardContent,
@@ -15,11 +15,11 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { ChartConfig, ChartContainer } from "@/components/ui/chart"
+} from "@/components/ui/card";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 
 interface OngoingJobProps {
-  jobId: string
+  jobId: string;
 }
 
 export function OngoingJob({ jobId }: OngoingJobProps) {
@@ -29,30 +29,34 @@ export function OngoingJob({ jobId }: OngoingJobProps) {
   const chartData = [
     {
       progress,
-      fill: "#ffffff"
-    }
-  ]
+      fill: "#ffffff",
+    },
+  ];
 
   const chartConfig = {
     progress: {
       label: "Progress",
-      color: "hsl(var(--chart-1))"
-    }
-  } satisfies ChartConfig
+      color: "hsl(var(--chart-1))",
+    },
+  } satisfies ChartConfig;
 
   return (
     <div className="min-h-screen p-6">
       <Card>
         <CardHeader>
           <CardTitle>Training in Progress</CardTitle>
-          <CardDescription>Your model is currently being trained</CardDescription>
+          <CardDescription>
+            Your model is currently being trained
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-4">
-            <TrendingUp className="h-6 w-6 text-primary" />
+            <TrendingUp className="h-6 w-6 text-purple-400" />
             <div className="space-y-1">
               <p className="text-sm font-medium">Progress</p>
-              <p className="text-sm text-muted-foreground">{Math.round(progress * 100)}% Complete</p>
+              <p className="text-sm text-muted-foreground">
+                {Math.round(progress * 100)}% Complete
+              </p>
             </div>
           </div>
         </CardContent>
@@ -61,7 +65,9 @@ export function OngoingJob({ jobId }: OngoingJobProps) {
         <Card className="flex flex-col">
           <CardHeader className="items-center pb-0">
             <CardTitle>Training Progress</CardTitle>
-            <CardDescription>Step {Math.round(progress * 100)}% Complete</CardDescription>
+            <CardDescription>
+              Step {Math.round(progress * 100)}% Complete
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -109,7 +115,7 @@ export function OngoingJob({ jobId }: OngoingJobProps) {
                               Complete
                             </tspan>
                           </text>
-                        )
+                        );
                       }
                     }}
                   />
@@ -117,10 +123,9 @@ export function OngoingJob({ jobId }: OngoingJobProps) {
               </RadialBarChart>
             </ChartContainer>
           </CardContent>
-          <CardFooter className="flex-col gap-2 text-sm pt-2">
-          </CardFooter>
+          <CardFooter className="flex-col gap-2 text-sm pt-2"></CardFooter>
         </Card>
       </div>
     </div>
-  )
+  );
 }

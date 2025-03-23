@@ -1,22 +1,24 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { CurrentModel } from "./current-model"
-import { ModelProgress } from "./model-progress"
-import { BackloggedJobsTable, type BackloggedJob } from "./backlogged-jobs-table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { useRouter } from "next/navigation";
+import { CurrentModel } from "./current-model";
+import { ModelProgress } from "./model-progress";
+import {
+  BackloggedJobsTable,
+  type BackloggedJob,
+} from "./backlogged-jobs-table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { useQuery } from "convex/react"
-import { api } from "../../../convex/_generated/api"
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 
 export default function TrainerHomePage() {
-
   const trainingModelsId = useQuery(api.tasks.getTrainingModels);
 
   let terminalOutput = "";
   const logs = useQuery(api.tasks.getLogs);
-  if(logs){
+  if (logs) {
     terminalOutput = logs.join("\n");
   }
   const router = useRouter();
@@ -33,7 +35,7 @@ export default function TrainerHomePage() {
         </p>
       </div>
 
-       <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="col-span-1">
           <CardHeader>
             <CardTitle>Backlogged Jobs</CardTitle>
@@ -63,5 +65,5 @@ export default function TrainerHomePage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
