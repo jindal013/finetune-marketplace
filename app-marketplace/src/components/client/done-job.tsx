@@ -10,7 +10,6 @@ import { useState } from "react"
 interface DoneJobProps {
   name: string
   modelId: string
-  architecture: string
   trainingFile: string
   modelParams: Record<string, any>
 }
@@ -20,7 +19,7 @@ interface Message {
   content: string
 }
 
-export function DoneJob({ name, modelId, architecture, trainingFile, modelParams }: DoneJobProps) {
+export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
 
@@ -53,10 +52,6 @@ export function DoneJob({ name, modelId, architecture, trainingFile, modelParams
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">Architecture</TableCell>
-                  <TableCell>{architecture}</TableCell>
-                </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Learning Rate</TableCell>
                   <TableCell>{modelParams.learningRate}</TableCell>

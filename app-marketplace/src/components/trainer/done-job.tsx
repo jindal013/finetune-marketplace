@@ -6,12 +6,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 interface DoneJobProps {
   name: string
   modelId: string
-  architecture: string
   trainingFile: string
   modelParams: Record<string, string | number>
 }
 
-export function DoneJob({ name, modelId, architecture, trainingFile, modelParams }: DoneJobProps) {
+export function DoneJob({ name, modelId,  trainingFile, modelParams }: DoneJobProps) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <Card className="col-span-2">
@@ -46,10 +45,6 @@ export function DoneJob({ name, modelId, architecture, trainingFile, modelParams
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold">Architecture</h3>
-              <p>{architecture}</p>
-            </div>
             <div>
               <h3 className="font-semibold">Hyperparameters</h3>
               <ul className="list-disc pl-4">

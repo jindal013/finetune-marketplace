@@ -14,10 +14,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Upload } from "lucide-react"
-import { getStorage, ref, uploadBytes } from "firebase/storage"
-import { initializeApp } from "firebase/app"
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { storage } from "@/lib/firebase"
+import { ref, uploadBytes } from "firebase/storage"
 
 import * as React from "react"
 
@@ -30,22 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { json } from "stream/consumers"
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBz0XRFZjisjl2m2kjefJwt5ydxUc5FabA",
-  authDomain: "finetunemarketplace-1323f.firebaseapp.com",
-  databaseURL: "https://finetunemarketplace-1323f-default-rtdb.firebaseio.com",
-  projectId: "finetunemarketplace-1323f",
-  storageBucket: "finetunemarketplace-1323f.firebasestorage.app",
-  messagingSenderId: "163760710265",
-  appId: "1:163760710265:web:676a8e7c5116ad6661eaa8",
-  measurementId: "G-2HQ21J89S1"
-};
 
 
-const app = initializeApp(firebaseConfig)
-const storage = getStorage(app)
 
 export function JobPopup() {
   const [file, setFile] = React.useState<File | null>(null)
@@ -59,20 +45,20 @@ export function JobPopup() {
     }
 
     const config = {
-      jobName: (document.getElementById("name") as HTMLInputElement)?.value,
-      modelId: (document.getElementById("model_id") as HTMLInputElement)?.value,
-      precision: (document.getElementById("precision") as HTMLInputElement)?.value,
-      modulesLimit: Number((document.getElementById("modules_limit") as HTMLInputElement)?.value),
-      loraRank: Number((document.getElementById("r") as HTMLInputElement)?.value),
-      loraAlpha: Number((document.getElementById("lora_alpha") as HTMLInputElement)?.value),
-      batchSize: Number((document.getElementById("batch_size") as HTMLInputElement)?.value),
-      optimizer: (document.getElementById("optim") as HTMLInputElement)?.value,
-      warmupSteps: Number((document.getElementById("warmup_steps") as HTMLInputElement)?.value),
-      maxSteps: Number((document.getElementById("max_steps") as HTMLInputElement)?.value),
-      evalSteps: Number((document.getElementById("eval_steps") as HTMLInputElement)?.value),
-      learningRate: Number((document.getElementById("learning_rate") as HTMLInputElement)?.value),
-      loggingSteps: Number((document.getElementById("logging_steps") as HTMLInputElement)?.value),
-    }
+      jobName: (document.getElementById("name") as HTMLInputElement)?.value || "",
+      modelId: (document.getElementById("model_id") as HTMLInputElement)?.value || "google/gemma-2b-it",
+      precision: (document.getElementById("precision") as HTMLInputElement)?.value || "bfloat16",
+      modulesLimit: Number((document.getElementById("modules_limit") as HTMLInputElement)?.value) || 10,
+      loraRank: Number((document.getElementById("r") as HTMLInputElement)?.value) || 2,
+      loraAlpha: Number((document.getElementById("lora_alpha") as HTMLInputElement)?.value) || 0.5,
+      batchSize: Number((document.getElementById("batch_size") as HTMLInputElement)?.value) || 2,
+      optimizer: (document.getElementById("optim") as HTMLInputElement)?.value || "adamw_torch",
+      warmupSteps: Number((document.getElementById("warmup_steps") as HTMLInputElement)?.value) || 0.03,
+      maxSteps: Number((document.getElementById("max_steps") as HTMLInputElement)?.value) || 4,
+      evalSteps: Number((document.getElementById("eval_steps") as HTMLInputElement)?.value) || 2,
+      learningRate: Number((document.getElementById("learning_rate") as HTMLInputElement)?.value) || 2e-3,
+      loggingSteps: Number((document.getElementById("logging_steps") as HTMLInputElement)?.value) || 1,
+    };
 
     const random_num = Math.floor(Math.random() * 1000)
     const jsonConfig = new File([JSON.stringify(config)], "config.json", { type: "application/json" })
@@ -102,6 +88,7 @@ export function JobPopup() {
     <Dialog>
       <DialogTrigger asChild>
         <Button
+          style={{cursor: 'pointer'}}
           size="lg"
           className="text-lg px-8 py-6 shadow-lg transition-all hover:scale-105 hover:shadow-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
         >
@@ -268,7 +255,7 @@ export function JobPopup() {
 
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={submitQuery}>Submit Training Job</Button>
+          <Button style={{cursor: 'pointer'}} type="submit" onClick={submitQuery}>Submit Training Job</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

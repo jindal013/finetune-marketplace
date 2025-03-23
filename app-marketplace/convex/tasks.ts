@@ -24,7 +24,7 @@ export const get = query({
   }
 });
 
-export const getFireBasePathById = query({
+export const getJob = query({
   args: {
     id: v.id("tasks"),
   },
@@ -32,10 +32,7 @@ export const getFireBasePathById = query({
     const task = (await ctx.db.query("tasks").collect())
     .filter(task => task._id == args.id)[0];
 
-    console.log(task);
-
-    return task.firebasePath;
-
+    return task;
   }
 });
 
@@ -212,7 +209,6 @@ export const getSteps = query({
         totalSteps: lossData[lossData.length - 1].max_steps
       }
     }
-    console.log("ans", ans);
     return ans;
 
   }

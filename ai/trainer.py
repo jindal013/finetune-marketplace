@@ -81,21 +81,23 @@ def get_configs_from_firebase(path: str, id: str):
     config_data = json.load(f)
 
   training_config = TrainingConfig(
-    model_id=config_data.get("model_id", "google/gemma-2b-it"),
-    test_size=config_data.get("test_size", 0.1),
-    modules_limit=config_data.get("modules_limit", 10),
-    r=config_data.get("r", 2),
-    lora_alpha=config_data.get("lora_alpha", 0.5),
-    batch_size=config_data.get("batch_size", 2),
-    gradient_accumulation_steps=config_data.get("gradient_accumulation_steps", 1),
+    model_id=config_data.get("modelId", "google/gemma-2b-it"),
+    test_size=config_data.get("testSize", 0.1),
+    modules_limit=config_data.get("modulesLimit", 10),
+    r=config_data.get("loraRank", 2),
+    lora_alpha=config_data.get("loraAlpha", 0.5),
+    batch_size=config_data.get("batchSize", 2),
+    gradient_accumulation_steps=config_data.get("gradientAccumulationSteps", 1),
     optim=config_data.get("optim", "adamw_torch"),
-    warmup_steps=config_data.get("warmup_steps", 0.03),
-    max_steps=config_data.get("max_steps", 4),
-    eval_steps=config_data.get("eval_steps", 2),
-    learning_rate=config_data.get("learning_rate", 2e-3),
-    logging_steps=config_data.get("logging_steps", 1),
+    warmup_steps=config_data.get("warmupSteps", 0.03),
+    max_steps=config_data.get("maxSteps", 4),
+    eval_steps=config_data.get("evalSteps", 2),
+    learning_rate=config_data.get("learningRate", 2e-3),
+    logging_steps=config_data.get("loggingSteps", 1),
     precision=config_data.get("precision", "bfloat16")
   )
+
+
 
   log_status(id, f"Loaded training config from firebase")
 
@@ -372,7 +374,6 @@ app = Flask(__name__)
 CORS(app)
 logging.basicConfig(level=logging.DEBUG)
 
-@app.route('/train', methods=['POST'])
 @app.route('/train', methods=['POST'])
 def handle_train():
   if request.method == 'POST':
