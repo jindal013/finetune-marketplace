@@ -62,7 +62,7 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
         status: "training"
       });
 
-      const response = await fetch('http://127.0.0.1:4200/train', {
+      const response = await fetch('http://100.66.215.153:4200/train', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,7 +143,6 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
       },
     },
   ]
-
   const actionColumn: ColumnDef<BackloggedJob> = {
     accessorKey: "firebasePath",
     header: "Actions",
@@ -151,28 +150,28 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
       const firebasePath = row.getValue("firebasePath") as string;
       const id = row.original._id;
       const status = row.getValue("status") as string;
-      if (status.toLowerCase() === "queued") {
-        return (
-          <Button
-            size="sm"
-            style={{ cursor: 'pointer' }}
-            onClick={async (e) => {
-              e.stopPropagation();
-              try {
-                console.log("Starting training for job:", id);
-                console.log("Firebase path:", firebasePath);
-                await sendPostRequest(id, firebasePath);
-              } catch (error: unknown) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                alert("Failed to start training: " + errorMessage);
-              }
-            }}
-          >
-            Start Training
-          </Button>
-        );
-      }
-      return null;
+      return (
+        <Button
+          size="sm"
+          style={{ cursor: status.toLowerCase() === "queued" ? 'pointer' : 'not-allowed' }}
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (status.toLowerCase() !== "queued") return;
+
+            try {
+              console.log("Starting training for job:", id);
+              console.log("Firebase path:", firebasePath);
+              await sendPostRequest(id, firebasePath);
+            } catch (error: unknown) {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+              alert("Failed to start training: " + errorMessage);
+            }
+          }}
+          disabled={status.toLowerCase() !== "queued"}
+        >
+          Start Training
+        </Button>
+      );
     },
   }
 
