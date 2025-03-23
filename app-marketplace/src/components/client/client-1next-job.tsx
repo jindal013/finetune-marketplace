@@ -10,9 +10,9 @@ interface CurrentJobProps {
   onClick?: () => void
 }
 
-export function CurrentJob({ name, architecture, date, onClick }: CurrentJobProps) {
+export function CurrentJob({ name, date, onClick }: CurrentJobProps) {
   return (
-    <Card 
+    <Card
       className={`
         transition-all duration-300
         ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:border-primary/50' : ''}
@@ -24,13 +24,10 @@ export function CurrentJob({ name, architecture, date, onClick }: CurrentJobProp
           <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
           Current Job
         </CardTitle>
-        <CardDescription>
-          {name === "No active training" ? name : "Active training"}
-        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent">
-          {architecture}
+        {name === null ? "No active training" : name}
           <div className="text-sm font-normal text-muted-foreground mt-1">
             {date}
           </div>

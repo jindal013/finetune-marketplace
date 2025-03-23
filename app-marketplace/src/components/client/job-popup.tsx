@@ -120,14 +120,14 @@ export function JobPopup() {
             <Label htmlFor="name" className="text-right font-medium">
               Job Name
             </Label>
-            <Input id="name" placeholder="my-training-job" className="col-span-3" />
+            <Input id="name" placeholder="google/gemma-2b-it" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="model_id" className="text-right font-medium">
               Model ID
             </Label>
-            <Input id="model_id" placeholder="facebook/opt-350m" className="col-span-3" />
+            <Input id="model_id" placeholder="google/gemma-2b-it" className="col-span-3" />
           </div>
 
 
@@ -153,28 +153,28 @@ export function JobPopup() {
             <Label htmlFor="modules_limit" className="text-right font-medium">
               Modules Limit
             </Label>
-            <Input id="modules_limit" type="number" placeholder="8" className="col-span-3" />
+            <Input id="modules_limit" type="number" placeholder="10" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="r" className="text-right font-medium">
               LoRA Rank (r)
             </Label>
-            <Input id="r" type="number" placeholder="16" className="col-span-3" />
+            <Input id="r" type="number" placeholder="2" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="lora_alpha" className="text-right font-medium">
               LoRA Alpha
             </Label>
-            <Input id="lora_alpha" type="number" placeholder="32" className="col-span-3" />
+            <Input id="lora_alpha" type="number" placeholder="0.5" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="batch_size" className="text-right font-medium">
               Batch Size
             </Label>
-            <Input id="batch_size" type="number" placeholder="4" className="col-span-3" />
+            <Input id="batch_size" type="number" placeholder="2" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -199,35 +199,35 @@ export function JobPopup() {
             <Label htmlFor="warmup_steps" className="text-right font-medium">
               Warmup Steps
             </Label>
-            <Input id="warmup_steps" type="number" placeholder="100" className="col-span-3" />
+            <Input id="warmup_steps" type="number" placeholder="0.03" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="max_steps" className="text-right font-medium">
               Max Steps
             </Label>
-            <Input id="max_steps" type="number" placeholder="1000" className="col-span-3" />
+            <Input id="max_steps" type="number" placeholder="4" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="eval_steps" className="text-right font-medium">
               Eval Steps
             </Label>
-            <Input id="eval_steps" type="number" placeholder="100" className="col-span-3" />
+            <Input id="eval_steps" type="number" placeholder="2" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="learning_rate" className="text-right font-medium">
               Learning Rate
             </Label>
-            <Input id="learning_rate" type="number" step="0.0001" placeholder="0.0003" className="col-span-3" />
+            <Input id="learning_rate" type="number" step="0.0001" placeholder="0.0002" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="logging_steps" className="text-right font-medium">
               Logging Steps
             </Label>
-            <Input id="logging_steps" type="number" placeholder="10" className="col-span-3" />
+            <Input id="logging_steps" type="number" placeholder="1" className="col-span-3" />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">

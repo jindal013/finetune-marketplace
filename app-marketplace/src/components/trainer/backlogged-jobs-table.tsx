@@ -38,19 +38,25 @@ export type BackloggedJob = {
   firebasePath: string
 }
 
+interface BackloggedJobsTableProps {
+  data: BackloggedJob[]
+  variant?: 'client' | 'trainer'
+}
 function floatToDateTime(timestamp: number): string {
   const date = new Date(Math.floor(timestamp)); // Convert to milliseconds and create Date object
   return date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
 }
 
-
-export function BackloggedJobsTable({ data }: { data: BackloggedJob[] }) {
-
+export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJobsTableProps) {
   const updateStatus = useMutation(api.tasks.updateJob);
+  const router = useRouter()
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
 
   async function sendPostRequest(id: string, firebasePath: string): Promise<void> {
     try {
-
       await updateStatus({
         id: id as Id<"tasks">,
         status: "training"
@@ -59,16 +65,18 @@ export function BackloggedJobsTable({ data }: { data: BackloggedJob[] }) {
       const response = await fetch('http://127.0.0.1:4200/train', {
         method: 'POST',
         headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
         },
-        body: JSON.stringify({ "firebase_path": firebasePath }),
+        body: JSON.stringify({ "firebase_path": firebasePath, "id": id}),
       });
 
       if (!response.ok) {
+
         throw new Error(`HTTP error! status: ${response.status}`);
+
       }
 
       const data = await response.json();
@@ -77,20 +85,14 @@ export function BackloggedJobsTable({ data }: { data: BackloggedJob[] }) {
         id: id as Id<"tasks">,
         status: "done"
       });
+
     } catch (error) {
       console.error('Error starting training:', error);
       throw error;
     }
   }
 
-  console.log("BackloggedJobs data:", data);
-  const router = useRouter()
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
-
-  const columns: ColumnDef<BackloggedJob>[] = [
+  const baseColumns: ColumnDef<BackloggedJob>[] = [
     {
       accessorKey: "name",
       header: ({ column }) => (
@@ -106,7 +108,7 @@ export function BackloggedJobsTable({ data }: { data: BackloggedJob[] }) {
         <div className="flex items-center gap-4">
           <span
             className="cursor-pointer hover:underline"
-            onClick={() => router.push(`/trainer/jobs/${row.original._id}`)}
+            onClick={() => router.push(`/${variant}/jobs/${row.original._id}`)}
           >
             {row.getValue("name")}
           </span>
@@ -135,39 +137,46 @@ export function BackloggedJobsTable({ data }: { data: BackloggedJob[] }) {
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => floatToDateTime(row.getValue("_creationTime") as number),
-    },
-    {
-      accessorKey: "firebasePath",
-      header: "Actions",
       cell: ({ row }) => {
-        const firebasePath = row.getValue("firebasePath") as string;
-        const id = row.original._id;
-        const status = row.getValue("status") as string;
-        if (status === "queued") {
-          return (
-            <Button
-              size="sm"
-              style={{ cursor: 'pointer' }}
-              onClick={async (e) => {
-                e.stopPropagation();
-                try {
-                  console.log("Starting training for job:", id);
-                  console.log("Firebase path:", firebasePath);
-                  await sendPostRequest(id, firebasePath);
-                } catch (error: unknown) {
-                  const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-                  alert("Failed to start training: " + errorMessage);
-                }
-              }}
-            >
-              Start Training
-            </Button>
-          );
-        }
+        const date = row.getValue("_creationTime") as number;
+        return <span>{floatToDateTime(date)}</span>;
       },
     },
   ]
+
+  const actionColumn: ColumnDef<BackloggedJob> = {
+    accessorKey: "firebasePath",
+    header: "Actions",
+    cell: ({ row }) => {
+      const firebasePath = row.getValue("firebasePath") as string;
+      const id = row.original._id;
+      const status = row.getValue("status") as string;
+      if (status.toLowerCase() === "queued") {
+        return (
+          <Button
+            size="sm"
+            style={{ cursor: 'pointer' }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                console.log("Starting training for job:", id);
+                console.log("Firebase path:", firebasePath);
+                await sendPostRequest(id, firebasePath);
+              } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                alert("Failed to start training: " + errorMessage);
+              }
+            }}
+          >
+            Start Training
+          </Button>
+        );
+      }
+      return null;
+    },
+  }
+
+  const columns = variant === 'trainer' ? [...baseColumns, actionColumn] : baseColumns;
 
   const table = useReactTable({
     data,

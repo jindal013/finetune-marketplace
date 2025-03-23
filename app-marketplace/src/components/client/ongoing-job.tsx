@@ -29,7 +29,7 @@ export function OngoingJob({ jobId }: OngoingJobProps) {
   const chartData = [
     {
       progress,
-      fill: "var(--color-progress)"
+      fill: "#ffffff"
     }
   ]
 
@@ -71,7 +71,7 @@ export function OngoingJob({ jobId }: OngoingJobProps) {
               <RadialBarChart
                 data={chartData}
                 startAngle={0}
-                endAngle={250}
+                endAngle={progress * 360}
                 innerRadius={60}
                 outerRadius={80}
               >

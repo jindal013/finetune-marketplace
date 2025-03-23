@@ -1,7 +1,15 @@
 import json
 import os
+import flask
+import flask_cors
+from dotenv import load_dotenv
+import threading
+
+from convex import ConvexClient
+
 import torch
 import transformers
+from transformers import TrainerCallback
 import pyrebase  # pip install pyrebase4
 
 from dataclasses import dataclass
@@ -13,7 +21,16 @@ import random
 import csv
 import datasets as d
 
+import requests
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import logging
+import requests
+from datetime import datetime
+
 load_dotenv()
+CONVEX_URL = "https://blissful-ocelot-49.convex.cloud"
+client = ConvexClient(CONVEX_URL)
 
 
 firebaseConfig = {
@@ -48,7 +65,15 @@ class TrainingConfig:
   precision: str = "bfloat16"
 
 
-def get_configs_from_firebase(path: str):
+def get_time_stamp():
+  return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def log_status(id: str, status: str):
+  # log_str = f"[{get_time_stamp()}] {status}"
+  # client.mutation("tasks:createLogs", dict(model_id=id, log=log_str))
+  pass
+
+def get_configs_from_firebase(path: str, id: str):
   local_path = "./config.json"
   storage.child(f"{path}/config.json").download(local_path, "config.json")
 
@@ -56,25 +81,27 @@ def get_configs_from_firebase(path: str):
     config_data = json.load(f)
 
   training_config = TrainingConfig(
-    model_id=config_data.get("model_id", ""),
+    model_id=config_data.get("model_id", "google/gemma-2b-it"),
     test_size=config_data.get("test_size", 0.1),
-    modules_limit=config_data.get("modules_limit", 0),
-    r=config_data.get("r", 16),
-    lora_alpha=config_data.get("lora_alpha", 32),
-    batch_size=config_data.get("batch_size", 8),
+    modules_limit=config_data.get("modules_limit", 10),
+    r=config_data.get("r", 2),
+    lora_alpha=config_data.get("lora_alpha", 0.5),
+    batch_size=config_data.get("batch_size", 2),
     gradient_accumulation_steps=config_data.get("gradient_accumulation_steps", 1),
     optim=config_data.get("optim", "adamw_torch"),
     warmup_steps=config_data.get("warmup_steps", 0.03),
-    max_steps=config_data.get("max_steps", 100),
-    eval_steps=config_data.get("eval_steps", 50),
+    max_steps=config_data.get("max_steps", 4),
+    eval_steps=config_data.get("eval_steps", 2),
     learning_rate=config_data.get("learning_rate", 2e-4),
-    logging_steps=config_data.get("logging_steps", 10),
+    logging_steps=config_data.get("logging_steps", 1),
     precision=config_data.get("precision", "bfloat16")
   )
 
+  log_status(id, f"Loaded training config from firebase")
+
   return training_config
 
-def get_data_from_firebase(path: str):
+def get_data_from_firebase(path: str, id: str):
 
   local_path = "./data.txt"
   storage.child(f"{path}/data.txt").download(local_path, "data.txt")
@@ -85,6 +112,8 @@ def get_data_from_firebase(path: str):
   data_size = 200
   data = data.strip("\n\n") .replace("\n", " ").replace(" ", " ")
   data = [data[i:i+data_size] for i in range(0, len(data), data_size)]
+
+  log_status(id, f"Loaded data from firebase")
 
   dataset = []
   setence_length = 6
@@ -114,17 +143,36 @@ def get_data_from_firebase(path: str):
       writer.writeheader()
       writer.writerows(dataset)
 
+  log_status(id, f"Saved data to dataset.csv")
+
   return path
+
+def log_function(logs, id):
+ # log_str = f"[{get_time_stamp()}] {status}"
+  global num_steps
+  client.mutation("tasks:createStats", dict(model_id=id, step=num_steps, loss=logs['loss']))
+  print(f"\n logs are {logs} \n")
+
+class CustomLoggerCallback(TrainerCallback):
+    def __init__(self, log_function):
+        self.log_function = log_function
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs:
+            self.log_function(logs)
+
 
 class ModelTrainer:
 
-  def __init__(self, firebase_link: str):
+  def __init__(self, firebase_link: str, id: str):
 
     self.firebase_path = firebase_link
-    self.data_path = get_data_from_firebase(firebase_link)
-    self.cfg = get_configs_from_firebase(firebase_link)
-    print(self.cfg)
+    self.id = id
+    self.data_path = get_data_from_firebase(firebase_link, id)
+    self.cfg = get_configs_from_firebase(firebase_link, id)
+    log_status(id, f"Starting training with config: {self.cfg}")
     self.device = self._setup_device()
+    log_status(id, f"Device setup: {self.device}")
 
   def _setup_device(self):
     if torch.cuda.is_available():
@@ -147,6 +195,8 @@ class ModelTrainer:
         self.cfg.model_id, add_eos_token=True, padding_side="right"
     )
 
+    log_status(self.id, f"Loaded tokenizer {self.cfg.model_id}")
+
     if self.cfg.precision == "bfloat16":
       dp = torch.bfloat16
     elif self.cfg.precision == "float32":
@@ -160,6 +210,7 @@ class ModelTrainer:
       self.cfg.model_id,torch_dtype=dp , device_map=self.device
     )
 
+
     self.model.gradient_checkpointing_enable()
     self.lora_config = self._setup_finetune_params()
 
@@ -170,6 +221,9 @@ class ModelTrainer:
         f"Trainable: {trainable} | total: {total} | Percentage: {trainable / total * 100:.4f}%"
     )
     print("\n")
+
+    log_status(self.id, f"Model loaded successfully on {self.device} @ {dp} precision.")
+    log_status(self.id, f"Trainable: {trainable} | total: {total} | Percentage: {trainable / total * 100:.4f}%")
 
   def _setup_finetune_params(self):
     modules = self._find_all_linear_names()
@@ -189,6 +243,8 @@ class ModelTrainer:
     )
 
     self.model = get_peft_model(self.model, lora_config)
+
+    log_status(self.id, f"Setup finetune params")
 
     return lora_config
 
@@ -220,7 +276,9 @@ class ModelTrainer:
     ds = ds.map(lambda samples: self.generate_prompt(samples), batched=False)
     ds = ds.shuffle(seed=seed)
     ds = ds.train_test_split(test_size=self.cfg.test_size)
-    ds['test'] = ds['test'].shuffle(seed=seed).select(range(10))
+    ds['test'] = ds['test'].shuffle(seed=seed).select(range(2))
+
+    log_status(self.id, f"Setup dataset")
 
     return ds['train'], ds['test']
 
@@ -230,6 +288,7 @@ class ModelTrainer:
     lora_config = self.lora_config
     train_data, test_data = self._setup_dataset()
 
+    log_status(self.id, f"Starting training")
     trainer = SFTTrainer(
       model=self.model,
       train_dataset=train_data,
@@ -247,31 +306,24 @@ class ModelTrainer:
           eval_steps=self.cfg.eval_steps,
           per_device_eval_batch_size=self.cfg.batch_size,
           output_dir="job/checkpoints",
+          save_strategy="steps",
+          save_steps=self.cfg.max_steps,
           optim=self.cfg.optim,
           logging_dir="job/logs",
-          report_to=["tensorboard"],
-          save_strategy="steps",
-          save_steps=10,
-          save_total_limit=5,
+          report_to=[],
       ),
     )
 
+    trainer.add_callback(CustomLoggerCallback(log_function))
+
     trainer.train()
 
-    self.save_models(trainer)
+    log_status(self.id, f"Training completed")
+    log_status(self.id, f"Uploading to firebase")
 
-  def save_models(self, trainer):
-    new_model_path = "job/finetuned_models/"
-    trainer.model.save_pretrained(new_model_path)
+    # self.upload_to_firebase("./job")
 
-    merged_path = "job/merged_models/"
-    merged_model = PeftModel.from_pretrained(self.model, new_model_path)
-    merged_model = merged_model.merge_and_unload()
-    merged_model.save_pretrained(merged_path)
-    self.tokenizer.save_pretrained(merged_path)
-
-    print("uploading to firebase ...")
-    self.upload_to_firebase("./job")
+    log_status(self.id, f"Upload completed")
 
   def upload_to_firebase(self, base_dir):
     directories = [base_dir]
@@ -294,7 +346,37 @@ class ModelTrainer:
       print(f"Uploading {file} to {file_firebase}")
       storage.child(f"{self.firebase_path}/{file_firebase}").put(file)
 
-if __name__ == '__main__':
-    print(torch.__version__)
-    model = ModelTrainer("test")
+app = Flask(__name__)
+CORS(app)
+logging.basicConfig(level=logging.DEBUG)
+
+@app.route('/train', methods=['POST'])
+@app.route('/train', methods=['POST'])
+def handle_train():
+  if request.method == 'POST':
+    prompt = request.get_json()
+    global num_steps
+    num_steps = 0
+
+    firebase_path = prompt['firebase_path']
+    id = prompt['id']
+
+    print(f"Received firebase_path: {firebase_path}")
+
+    logging.info(f"Starting training with firebase_path: {firebase_path}")
+    model = ModelTrainer(firebase_path, id)
     model.train()
+
+    return jsonify({"status": "success"})
+
+
+
+@app.route("/", methods=["GET"])
+def index():
+    return "Hello, World!"
+
+if __name__ == '__main__':
+  # app.run(host="0.0.0.0", port=4200, debug=True)
+
+  model = ModelTrainer("test", "1")
+  model.train()

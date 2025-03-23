@@ -25,11 +25,11 @@ interface ProgressChartProps {
 
 export function ProgressChart({ currentStep, totalSteps }: ProgressChartProps) {
   const progress = currentStep && totalSteps ? (currentStep / totalSteps) * 100 : 0
-  
+
   const chartData = [
-    { 
+    {
       progress: progress,
-      fill: "var(--color-progress)"
+      fill: "#ffffff"
     }
   ]
 
@@ -57,7 +57,7 @@ export function ProgressChart({ currentStep, totalSteps }: ProgressChartProps) {
             <RadialBarChart
               data={chartData}
               startAngle={0}
-              endAngle={250}
+              endAngle={currentStep / totalSteps * 360}
               innerRadius={60}
               outerRadius={80}
             >

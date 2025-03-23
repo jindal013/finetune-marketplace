@@ -7,8 +7,13 @@ import { EvaluationChart } from "@/components/client/client-3eval-chart"
 import { JobPopup } from "./job-popup"
 import { JobsTable, type Job } from "./jobs-table"
 import { useState } from "react"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { BackloggedJobsTable, type BackloggedJob } from "@/components/trainer/backlogged-jobs-table"
 
-// Example data - replace with real data from your backend
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+
+// Example data for regular jobs
 const jobs: Job[] = [
   {
     id: "1",
@@ -38,7 +43,7 @@ const jobs: Job[] = [
     trainingTime: "2h 15m",
     trainer: "Eric",
     date: "2024-03-20"
-  },
+  }
 ]
 
 const evaluationData = [
@@ -51,12 +56,17 @@ const evaluationData = [
   { date: "2024-03-26", loss: 0.9, accuracy: 0.89 },
   { date: "2024-03-27", loss: 0.8, accuracy: 0.91 },
   { date: "2024-03-28", loss: 0.7, accuracy: 0.92 },
-  { date: "2024-03-29", loss: 0.6, accuracy: 0.93 },
+  { date: "2024-03-29", loss: 0.6, accuracy: 0.93 }
 ]
 
 export function ClientHomePage() {
   const router = useRouter()
-  const ongoingJob = jobs.find(job => job.status === "Ongoing")
+  const exampleBackloggedJobs = useQuery(api.tasks.getJobs) ?? [];
+  let ongoingJob = exampleBackloggedJobs.filter(job => job.status === "training") || null;
+  if (ongoingJob){
+    ongoingJob = ongoingJob[0];
+  }
+
 
   return (
     <div className="min-h-screen p-8 space-y-12 max-w-[1600px] mx-auto">
@@ -74,34 +84,27 @@ export function ClientHomePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <CurrentJob
-          name={ongoingJob?.name || "No active training"}
-          architecture={ongoingJob?.architecture || "-"}
-          date={ongoingJob?.date || "-"}
-          onClick={() => ongoingJob && router.push(`/jobs/${ongoingJob.id}`)}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-4">
+          <CurrentJob
+            name={ongoingJob?.name || "No active training"}
+            date={ongoingJob?.date || "-"}
+            onClick={() => ongoingJob && router.push(`/jobs/${ongoingJob.id}`)}
+          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Backlogged Jobs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BackloggedJobsTable data={exampleBackloggedJobs || []} variant="client" />
+            </CardContent>
+          </Card>
+        </div>
         <ProgressChart
           currentStep={ongoingJob?.currentStep}
           totalSteps={ongoingJob?.totalSteps}
         />
-        <EvaluationChart evaluationData={evaluationData} />
-      </div>
-
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">Training Jobs</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage and monitor your training jobs
-          </p>
-        </div>
-        <div className="rounded-xl border shadow-sm bg-card">
-          <div className="p-1">
-            <div className="max-h-[500px] overflow-y-auto rounded-lg">
-              <JobsTable data={jobs} />
-            </div>
-          </div>
-        </div>
+        <EvaluationChart evaluationData={evaluationData || []} />
       </div>
     </div>
   )

@@ -10,6 +10,7 @@ import { ErrorJob } from "@/components/client/error-job"
 export default function ClientJobPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const job = useQuery(api.tasks.getById, { taskId: resolvedParams.id });
+  const exampleBackloggedJobs = useQuery(api.tasks.getJobs) ?? []
 
   if (!job) {
     return <div>Loading...</div>;

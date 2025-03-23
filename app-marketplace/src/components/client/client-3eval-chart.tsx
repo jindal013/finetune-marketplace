@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts"
+import { CartesianGrid, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 
 interface EvaluationData {
-  date: string
+  step: number
   loss: number
   accuracy: number
 }
@@ -18,16 +18,38 @@ interface EvaluationChartProps {
 const chartConfig = {
   loss: {
     label: "Loss",
-    color: "hsl(var(--chart-1))",
+    color: "#ef4444", // red-500
   },
   accuracy: {
     label: "Accuracy",
-    color: "hsl(var(--chart-2))",
+    color: "#22c55e", // green-500
   },
 } satisfies ChartConfig
 
 export function EvaluationChart({ evaluationData }: EvaluationChartProps) {
   const [activeMetric, setActiveMetric] = useState<keyof typeof chartConfig>("loss")
+
+  const formatStep = (step: number) => {
+    return `${step}`
+  }
+
+  const formatValue = (value: number) => {
+    return value.toFixed(2)
+  }
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="rounded-lg border bg-background p-2 shadow-sm">
+          <div className="text-sm font-medium">Step {label}</div>
+          <div className="text-sm text-muted-foreground">
+            {chartConfig[activeMetric].label}: {formatValue(payload[0].value)}
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
     <Card>
@@ -38,55 +60,95 @@ export function EvaluationChart({ evaluationData }: EvaluationChartProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex space-x-2 mb-2">
+        <div className="flex space-x-2 mb-4">
           {(["loss", "accuracy"] as const).map((metric) => (
             <button
               key={metric}
               onClick={() => setActiveMetric(metric)}
               className={`px-3 py-1 rounded-full text-xs font-medium transition-colors
-                ${activeMetric === metric 
-                  ? 'bg-primary text-primary-foreground' 
+                ${activeMetric === metric
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
             >
               {chartConfig[metric].label}
             </button>
           ))}
         </div>
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-[2/1] w-full"
-        >
-          <LineChart
-            data={evaluationData}
-            margin={{
-              left: 0,
-              right: 0,
-              top: 10,
-              bottom: 10,
-            }}
-          >
-            <CartesianGrid vertical={false} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value: string) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
+        <div className="h-[200px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={evaluationData}
+              margin={{
+                top: 5,
+                right: 10,
+                left: 10,
+                bottom: 20,
               }}
-            />
-            <Line
-              type="monotone"
-              dataKey={activeMetric}
-              stroke={`var(--color-${activeMetric})`}
-              strokeWidth={2}
-              dot={false}
-            />
-          </LineChart>
-        </ChartContainer>
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal={true}
+                vertical={false}
+                stroke="hsl(var(--muted-foreground))"
+                opacity={0.2}
+              />
+              <XAxis
+                dataKey="step"
+                tickFormatter={formatStep}
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={true}
+                axisLine={true}
+                dy={10}
+                opacity={0.5}
+                label={{
+                  value: "Steps",
+                  position: "bottom",
+                  offset: 0,
+                  opacity: 0.5
+                }}
+              />
+              <YAxis
+                tickFormatter={formatValue}
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={true}
+                axisLine={true}
+                dx={-10}
+                opacity={0.5}
+                width={35}
+                label={{
+                  value: chartConfig[activeMetric].label,
+                  angle: -90,
+                  position: "insideLeft",
+                  offset: 0,
+                  opacity: 0.5
+                }}
+              />
+              <Tooltip
+                content={CustomTooltip}
+                cursor={{ stroke: "hsl(var(--muted-foreground))", strokeWidth: 1 }}
+              />
+              <Line
+                type="monotone"
+                dataKey={activeMetric}
+                stroke={chartConfig[activeMetric].color}
+                strokeWidth={2}
+                dot={{
+                  r: 2,
+                  fill: chartConfig[activeMetric].color,
+                  strokeWidth: 0,
+                }}
+                activeDot={{
+                  r: 4,
+                  fill: "hsl(var(--background))",
+                  stroke: chartConfig[activeMetric].color,
+                  strokeWidth: 2,
+                }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   )

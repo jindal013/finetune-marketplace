@@ -39,7 +39,6 @@ export const createJob = mutation({
   }
 })
 
-
 export const getJobs = query({
   args: {},
   handler: async (ctx) => {
@@ -56,5 +55,47 @@ export const updateJob = mutation({
   handler: async (ctx, args) => {
     const id = args.id;
     return await ctx.db.patch(id, { status: args.status });
+  }
+})
+
+
+export const getTrainingModels = query({
+  args: {
+  },
+  handler: async (ctx, args) => {
+    return (await ctx.db.query("tasks").collect())
+    .filter(task => task.status === "training")
+    .map(task => ({
+      id: task._id
+    }));
+  }
+});
+
+export const createLogs = mutation({
+  args: {
+    model_id: v.id("tasks"),
+    log: v.string()
+  },
+  handler(ctx, args) {
+    return ctx.db.insert("logs", {
+      log: args.log,
+      model_id: args.model_id
+    });
+  },
+});
+
+export const getLogs = query({
+  args:{
+  },
+  handler: async (ctx, args)=>{
+    const models_id = (await ctx.db.query("tasks").collect())
+    .filter(task => task.status == "training")
+    .map(task => task._id)[0];
+
+    const ans = (await ctx.db.query("logs").collect())
+    .filter(log => log.model_id == models_id)
+    .map(log => log.log);
+
+    return ans
   }
 })
