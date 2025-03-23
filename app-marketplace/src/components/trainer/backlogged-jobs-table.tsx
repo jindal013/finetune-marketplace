@@ -75,8 +75,12 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
 
       if (!response.ok) {
 
-        throw new Error(`HTTP error! status: ${response.status}`);
-
+        await updateStatus({
+          id: id as Id<"tasks">,
+          status: "queued"
+        });
+        alert("Failed to start training: " + response.statusText);
+        return;
       }
 
       const data = await response.json();

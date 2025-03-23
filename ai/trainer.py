@@ -4,6 +4,7 @@ import flask
 import flask_cors
 from dotenv import load_dotenv
 import threading
+import shutil
 
 from convex import ConvexClient
 
@@ -69,9 +70,8 @@ def get_time_stamp():
   return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def log_status(id: str, status: str):
-  # log_str = f"[{get_time_stamp()}] {status}"
-  # client.mutation("tasks:createLogs", dict(model_id=id, log=log_str))
-  pass
+  log_str = f"[{get_time_stamp()}] {status}"
+  client.mutation("tasks:createLogs", dict(model_id=id, log=log_str))
 
 def get_configs_from_firebase(path: str, id: str):
   local_path = "./config.json"
@@ -92,7 +92,7 @@ def get_configs_from_firebase(path: str, id: str):
     warmup_steps=config_data.get("warmup_steps", 0.03),
     max_steps=config_data.get("max_steps", 4),
     eval_steps=config_data.get("eval_steps", 2),
-    learning_rate=config_data.get("learning_rate", 2e-4),
+    learning_rate=config_data.get("learning_rate", 2e-3),
     logging_steps=config_data.get("logging_steps", 1),
     precision=config_data.get("precision", "bfloat16")
   )
@@ -147,19 +147,39 @@ def get_data_from_firebase(path: str, id: str):
 
   return path
 
-def log_function(logs, id):
+def log_function(logs, id, max_steps):
  # log_str = f"[{get_time_stamp()}] {status}"
   global num_steps
-  client.mutation("tasks:createStats", dict(model_id=id, step=num_steps, loss=logs['loss']))
-  print(f"\n logs are {logs} \n")
+
+  convex_fn = {
+    "loss": "tasks:createLoss",
+    "eval_loss": "tasks:createEval"
+  }
+
+  db = "loss" if logs.get("loss", None) is not None else "eval_loss"
+  if db not in logs.keys():
+    return
+
+  db_fn = convex_fn[db]
+  if db == "loss":
+    num_steps += 1
+
+  client.mutation(db_fn, dict(model_id=id,
+                              step=num_steps,
+                              loss=logs[db],
+                              max_steps=max_steps)
+                  )
+
 
 class CustomLoggerCallback(TrainerCallback):
-    def __init__(self, log_function):
+    def __init__(self, log_function, id, max_steps):
         self.log_function = log_function
+        self.id = id
+        self.max_steps = max_steps
 
     def on_log(self, args, state, control, logs=None, **kwargs):
         if logs:
-            self.log_function(logs)
+            self.log_function(logs, self.id, self.max_steps)
 
 
 class ModelTrainer:
@@ -276,7 +296,7 @@ class ModelTrainer:
     ds = ds.map(lambda samples: self.generate_prompt(samples), batched=False)
     ds = ds.shuffle(seed=seed)
     ds = ds.train_test_split(test_size=self.cfg.test_size)
-    ds['test'] = ds['test'].shuffle(seed=seed).select(range(2))
+    ds['test'] = ds['test'].shuffle(seed=seed).select(range(1))
 
     log_status(self.id, f"Setup dataset")
 
@@ -303,7 +323,7 @@ class ModelTrainer:
           learning_rate=self.cfg.learning_rate,
           logging_steps=self.cfg.logging_steps,
           evaluation_strategy="steps",
-          eval_steps=self.cfg.eval_steps,
+          eval_steps=self.cfg.logging_steps,
           per_device_eval_batch_size=self.cfg.batch_size,
           output_dir="job/checkpoints",
           save_strategy="steps",
@@ -314,16 +334,18 @@ class ModelTrainer:
       ),
     )
 
-    trainer.add_callback(CustomLoggerCallback(log_function))
+    trainer.add_callback(CustomLoggerCallback(log_function, self.id, self.cfg.max_steps))
 
     trainer.train()
 
     log_status(self.id, f"Training completed")
     log_status(self.id, f"Uploading to firebase")
 
-    # self.upload_to_firebase("./job")
+    self.upload_to_firebase("./job/checkpoints")
 
     log_status(self.id, f"Upload completed")
+
+    shutil.rmtree("./job")
 
   def upload_to_firebase(self, base_dir):
     directories = [base_dir]
@@ -376,7 +398,7 @@ def index():
     return "Hello, World!"
 
 if __name__ == '__main__':
-  # app.run(host="0.0.0.0", port=4200, debug=True)
+  app.run(host="0.0.0.0", port=4200, debug=True)
 
-  model = ModelTrainer("test", "1")
-  model.train()
+  # model = ModelTrainer("test", "1")
+  # model.train()

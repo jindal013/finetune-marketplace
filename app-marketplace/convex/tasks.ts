@@ -24,6 +24,22 @@ export const get = query({
   }
 });
 
+export const getFireBasePathById = query({
+  args: {
+    id: v.id("tasks"),
+  },
+  handler: async (ctx, args) => {
+    const task = (await ctx.db.query("tasks").collect())
+    .filter(task => task._id == args.id)[0];
+
+    console.log(task);
+
+    return task.firebasePath;
+
+  }
+});
+
+
 export const createJob = mutation({
   args: {
     name: v.string(),
@@ -98,4 +114,107 @@ export const getLogs = query({
 
     return ans
   }
+})
+
+
+export const createLoss = mutation({
+  args: {
+    model_id: v.id("tasks"),
+    step: v.number(),
+    loss: v.number(),
+    max_steps: v.number(),
+  },
+  handler(ctx, args) {
+    return ctx.db.insert("loss", {
+      model_id: args.model_id,
+      step: args.step,
+      loss: args.loss,
+      max_steps: args.max_steps
+    });
+  },
+});
+
+
+export const createEval = mutation({
+  args: {
+    model_id: v.id("tasks"),
+    step: v.number(),
+    loss: v.number(),
+    max_steps: v.number(),
+  },
+  handler(ctx, args) {
+    return ctx.db.insert("eval", {
+      model_id: args.model_id,
+      step: args.step,
+      loss: args.loss,
+      max_steps: args.max_steps
+    });
+  },
+});
+
+
+export const getMetrics = query({
+  args: {},
+  handler: async (ctx, args) => {
+    const models_id = (await ctx.db.query("tasks").collect())
+    .filter(task => task.status == "training")
+    .map(task => task._id)[0];
+
+    const [lossData, evalData] = await Promise.all([
+      ctx.db.query("loss").collect(),
+      ctx.db.query("eval").collect()
+    ]);
+
+    const metrics = new Map();
+
+    lossData
+      .filter(l => l.model_id === models_id)
+      .forEach(l => {
+        metrics.set(l.step, { step: l.step, loss: l.loss });
+      });
+
+    evalData
+      .filter(e => e.model_id === models_id)
+      .forEach(e => {
+        const entry = metrics.get(e.step) || { step: e.step };
+        entry.eval = e.loss;
+        metrics.set(e.step, entry);
+      });
+
+    const combinedMetrics = Array.from(metrics.values());
+
+    return combinedMetrics;
+  }
+})
+
+
+export const getSteps = query({
+
+  args: {},
+  handler: async (ctx, args) => {
+    const models_id = (await ctx.db.query("tasks").collect())
+    .filter(task => task.status == "training")
+    .map(task => task._id)[0];
+
+    const lossData = (await ctx.db.query("loss").collect())
+    .filter(l => l.model_id === models_id);
+
+    let ans;
+    if(lossData.length == 0){
+      ans = {
+        currentStep: 0,
+        totalSteps: 0
+      }
+    }
+    else {
+      ans = {
+        currentStep: lossData[lossData.length - 1].step,
+        totalSteps: lossData[lossData.length - 1].max_steps
+      }
+    }
+    console.log("ans", ans);
+    return ans;
+
+  }
+
 })

@@ -118,12 +118,6 @@ export function OngoingJob({ jobId }: OngoingJobProps) {
             </ChartContainer>
           </CardContent>
           <CardFooter className="flex-col gap-2 text-sm pt-2">
-            <div className="flex items-center gap-2 font-medium leading-none">
-              Training at optimal speed <TrendingUp className="h-4 w-4" />
-            </div>
-            <div className="leading-none text-muted-foreground">
-              Estimated completion in {Math.round((1 - progress) * 10)} minutes
-            </div>
           </CardFooter>
         </Card>
       </div>

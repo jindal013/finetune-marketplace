@@ -8,7 +8,7 @@ import { ChartConfig, ChartContainer } from "@/components/ui/chart"
 interface EvaluationData {
   step: number
   loss: number
-  accuracy: number
+  eval: number
 }
 
 interface EvaluationChartProps {
@@ -20,8 +20,8 @@ const chartConfig = {
     label: "Loss",
     color: "#ef4444", // red-500
   },
-  accuracy: {
-    label: "Accuracy",
+  eval: {
+    label: "Eval Loss",
     color: "#22c55e", // green-500
   },
 } satisfies ChartConfig
@@ -61,7 +61,7 @@ export function EvaluationChart({ evaluationData }: EvaluationChartProps) {
       </CardHeader>
       <CardContent>
         <div className="flex space-x-2 mb-4">
-          {(["loss", "accuracy"] as const).map((metric) => (
+          {(["loss", "eval"] as const).map((metric) => (
             <button
               key={metric}
               onClick={() => setActiveMetric(metric)}
@@ -95,7 +95,7 @@ export function EvaluationChart({ evaluationData }: EvaluationChartProps) {
               <XAxis
                 dataKey="step"
                 tickFormatter={formatStep}
-                stroke="hsl(var(--muted-foreground))"
+                stroke="#ffffff"
                 fontSize={12}
                 tickLine={true}
                 axisLine={true}
@@ -110,7 +110,7 @@ export function EvaluationChart({ evaluationData }: EvaluationChartProps) {
               />
               <YAxis
                 tickFormatter={formatValue}
-                stroke="hsl(var(--muted-foreground))"
+                stroke="#ffffff"
                 fontSize={12}
                 tickLine={true}
                 axisLine={true}

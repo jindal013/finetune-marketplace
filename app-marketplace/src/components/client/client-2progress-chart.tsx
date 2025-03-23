@@ -56,8 +56,8 @@ export function ProgressChart({ currentStep, totalSteps }: ProgressChartProps) {
           >
             <RadialBarChart
               data={chartData}
-              startAngle={0}
-              endAngle={currentStep / totalSteps * 360}
+              startAngle={90}
+              endAngle={- (currentStep / totalSteps * 360) + 90}
               innerRadius={60}
               outerRadius={80}
             >
@@ -107,14 +107,6 @@ export function ProgressChart({ currentStep, totalSteps }: ProgressChartProps) {
         )}
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm pt-2">
-        <div className="flex items-center gap-2 font-medium leading-none">
-          Training at optimal speed <TrendingUp className="h-4 w-4" />
-        </div>
-        {currentStep && totalSteps && (
-          <div className="leading-none text-muted-foreground">
-            Estimated completion in {Math.round((totalSteps - currentStep) / 2)} minutes
-          </div>
-        )}
       </CardFooter>
     </Card>
   )
