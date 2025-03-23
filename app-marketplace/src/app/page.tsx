@@ -170,7 +170,7 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-gray-400 text-xl">
-            Search and post jobs with the code abstracted away
+            Finetune and deploy models with the code abstracted away
           </p>
         </div>
 

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import { initializeApp, getApps} from "firebase/app"
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 
-import * as React from "react"
+import * as React from "react";
 
 import {
   Select,
@@ -39,7 +39,7 @@ const firebaseConfig = {
   storageBucket: "finetunemarketplace-1323f.firebasestorage.app",
   messagingSenderId: "163760710265",
   appId: "1:163760710265:web:676a8e7c5116ad6661eaa8",
-  measurementId: "G-2HQ21J89S1"
+  measurementId: "G-2HQ21J89S1",
 };
 
 
@@ -47,14 +47,13 @@ let app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const storage = getStorage(app)
 
 export function JobPopup() {
-  const [file, setFile] = React.useState<File | null>(null)
-  const createJob = useMutation(api.tasks.createJob)
+  const [file, setFile] = React.useState<File | null>(null);
+  const createJob = useMutation(api.tasks.createJob);
 
   const submitQuery = async () => {
-
     if (!file) {
-      alert("Please upload a training file")
-      return
+      alert("Please upload a training file");
+      return;
     }
 
     const config = {
@@ -73,46 +72,54 @@ export function JobPopup() {
       loggingSteps: Number((document.getElementById("logging_steps") as HTMLInputElement)?.value) || 1,
     };
 
-    const random_num = Math.floor(Math.random() * 1000)
-    const jsonConfig = new File([JSON.stringify(config)], "config.json", { type: "application/json" })
-    const jsonFile = new File([file], "data.txt", { type: "text/plain" })
-
+    const random_num = Math.floor(Math.random() * 1000);
+    const jsonConfig = new File([JSON.stringify(config)], "config.json", {
+      type: "application/json",
+    });
+    const jsonFile = new File([file], "data.txt", { type: "text/plain" });
 
     try {
+      const firebasePath = `train${random_num}`;
+      const storageRefConfig = ref(
+        storage,
+        `${firebasePath}/${jsonConfig.name}`
+      );
+      await uploadBytes(storageRefConfig, jsonConfig);
 
-      const firebasePath = `train${random_num}`
-      const storageRefConfig = ref(storage, `${firebasePath}/${jsonConfig.name}`)
-      await uploadBytes(storageRefConfig, jsonConfig)
+      const storageRefFile = ref(storage, `${firebasePath}/${jsonFile.name}`);
+      await uploadBytes(storageRefFile, jsonFile);
 
-      const storageRefFile = ref(storage, `${firebasePath}/${jsonFile.name}`)
-      await uploadBytes(storageRefFile, jsonFile)
+      console.log("createintg job");
 
-
-      console.log('createintg job')
-      await createJob({ name: config.jobName, firebasePath: `${firebasePath}`, status: "queued", config: config })
+      await createJob({
+        name: config.jobName,
+        firebasePath: `${firebasePath}`,
+        status: "queued",
+        config: config,
+      });
 
       window.location.href = "/client";
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
-  }
+  };
 
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button
           style={{cursor:"pointer"}}
-          size="lg"
-          className="text-lg px-8 py-6 shadow-lg transition-all hover:scale-105 hover:shadow-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+          size="sm"
+          className="bg-purple-300 hover:bg-purple-400 text-black"
         >
-          Start a job
+          Start New Training
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[625px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Start a Training Job</DialogTitle>
+          <DialogTitle>Create Training Job</DialogTitle>
           <DialogDescription>
-            Configure your AI model training parameters
+            Configure your model training parameters below.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -120,16 +127,23 @@ export function JobPopup() {
             <Label htmlFor="name" className="text-right font-medium">
               Job Name
             </Label>
-            <Input id="name" placeholder="google/gemma-2b-it" className="col-span-3" />
+            <Input
+              id="name"
+              placeholder="google/gemma-2b-it"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="model_id" className="text-right font-medium">
               Model ID
             </Label>
-            <Input id="model_id" placeholder="google/gemma-2b-it" className="col-span-3" />
+            <Input
+              id="model_id"
+              placeholder="google/gemma-2b-it"
+              className="col-span-3"
+            />
           </div>
-
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="precision" className="text-right font-medium">
@@ -153,28 +167,48 @@ export function JobPopup() {
             <Label htmlFor="modules_limit" className="text-right font-medium">
               Modules Limit
             </Label>
-            <Input id="modules_limit" type="number" placeholder="10" className="col-span-3" />
+            <Input
+              id="modules_limit"
+              type="number"
+              placeholder="10"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="r" className="text-right font-medium">
               LoRA Rank (r)
             </Label>
-            <Input id="r" type="number" placeholder="2" className="col-span-3" />
+            <Input
+              id="r"
+              type="number"
+              placeholder="2"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="lora_alpha" className="text-right font-medium">
               LoRA Alpha
             </Label>
-            <Input id="lora_alpha" type="number" placeholder="0.5" className="col-span-3" />
+            <Input
+              id="lora_alpha"
+              type="number"
+              placeholder="0.5"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="batch_size" className="text-right font-medium">
               Batch Size
             </Label>
-            <Input id="batch_size" type="number" placeholder="2" className="col-span-3" />
+            <Input
+              id="batch_size"
+              type="number"
+              placeholder="2"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -199,35 +233,61 @@ export function JobPopup() {
             <Label htmlFor="warmup_steps" className="text-right font-medium">
               Warmup Steps
             </Label>
-            <Input id="warmup_steps" type="number" placeholder="0.03" className="col-span-3" />
+            <Input
+              id="warmup_steps"
+              type="number"
+              placeholder="0.03"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="max_steps" className="text-right font-medium">
               Max Steps
             </Label>
-            <Input id="max_steps" type="number" placeholder="4" className="col-span-3" />
+            <Input
+              id="max_steps"
+              type="number"
+              placeholder="4"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="eval_steps" className="text-right font-medium">
               Eval Steps
             </Label>
-            <Input id="eval_steps" type="number" placeholder="2" className="col-span-3" />
+            <Input
+              id="eval_steps"
+              type="number"
+              placeholder="2"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="learning_rate" className="text-right font-medium">
               Learning Rate
             </Label>
-            <Input id="learning_rate" type="number" step="0.0001" placeholder="0.0002" className="col-span-3" />
+            <Input
+              id="learning_rate"
+              type="number"
+              step="0.0001"
+              placeholder="0.0002"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="logging_steps" className="text-right font-medium">
               Logging Steps
             </Label>
-            <Input id="logging_steps" type="number" placeholder="1" className="col-span-3" />
+            <Input
+              id="logging_steps"
+              type="number"
+              placeholder="1"
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">
@@ -242,7 +302,8 @@ export function JobPopup() {
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="w-8 h-8 mb-3 text-gray-400" />
                   <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+                    <span className="font-semibold">Click to upload</span> or
+                    drag and drop
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     TXT file (MAX. 800MB)
@@ -263,14 +324,17 @@ export function JobPopup() {
               )}
             </div>
           </div>
-
-
-
         </div>
         <DialogFooter>
-          <Button style={{cursor:'pointer'}}type="submit" onClick={submitQuery}>Submit Training Job</Button>
+          <Button
+            style={{cursor:'pointer'}}type="submit"
+            onClick={submitQuery}
+            className="bg-purple-300 hover:bg-purple-400 text-black"
+          >
+            Submit Training Job
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

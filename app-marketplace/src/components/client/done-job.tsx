@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -19,8 +19,8 @@ interface DoneJobProps {
 }
 
 interface Message {
-  role: 'user' | 'assistant'
-  content: string
+  role: "user" | "assistant";
+  content: string;
 }
 
 export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobProps) {
@@ -99,7 +99,11 @@ export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobPro
                 </TableRow>
               </TableBody>
             </Table>
-            <Button style={{cursor:'pointer'}}className="w-full mt-4" onClick={() => window.open(modelParams.weightsUrl)}>
+            <Button
+              style={{cursor: 'pointer'}}
+              className="w-full mt-6 bg-purple-400 hover:bg-purple-500 text-black"
+              onClick={() => window.open(modelParams.weightsUrl)}
+            >
               <Download className="mr-2 h-4 w-4" />
               Download Model Weights
             </Button>
@@ -130,14 +134,16 @@ export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobPro
                     <div
                       key={index}
                       className={`flex ${
-                        message.role === 'user' ? 'justify-end' : 'justify-start'
+                        message.role === "user"
+                          ? "justify-end"
+                          : "justify-start"
                       }`}
                     >
                       <div
                         className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                          message.role === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                          message.role === "user"
+                            ? "bg-purple-400 text-black"
+                            : "bg-muted"
                         }`}
                       >
                         {message.content}
@@ -151,16 +157,21 @@ export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobPro
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                   placeholder="Ask your model something..."
                   className="flex-grow p-2 border rounded-md"
                 />
-                <Button style={{cursor:'pointer'}} onClick={sendMessage}>Send</Button>
+                <Button
+                  onClick={sendMessage}
+                  className="bg-purple-400 hover:bg-purple-500 text-black"
+                >
+                  Send
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }
