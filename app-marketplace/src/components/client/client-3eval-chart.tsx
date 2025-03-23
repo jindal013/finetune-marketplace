@@ -121,7 +121,8 @@ export function EvaluationChart({ evaluationData }: EvaluationChartProps) {
                   value: chartConfig[activeMetric].label,
                   angle: -90,
                   position: "insideLeft",
-                  offset: 0,
+                  offset: -15,
+                  dx:-1.5,
                   opacity: 0.5
                 }}
               />

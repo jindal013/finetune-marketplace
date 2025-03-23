@@ -8,6 +8,7 @@ export default defineSchema({
     name: v.string(),
     firebasePath: v.string(),
     status: v.union(v.literal("queued"), v.literal("training"), v.literal("done")),
+    config: v.any(),
   }),
 });
 
@@ -20,6 +21,7 @@ export const get = query({
       status: task.status,
       firebasePath: task.firebasePath,
       date: new Date(task._creationTime).toISOString().split('T')[0],
+      config: task.config,
     }));
   }
 });
@@ -42,12 +44,14 @@ export const createJob = mutation({
     name: v.string(),
     firebasePath: v.string(),
     status: v.union(v.literal("queued"), v.literal("training"), v.literal("done")),
+    config: v.any(),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("tasks", {
       name: args.name,
       firebasePath: args.firebasePath,
       status: args.status,
+      config: args.config,
     });
   }
 })
@@ -180,6 +184,41 @@ export const getMetrics = query({
 
     const combinedMetrics = Array.from(metrics.values());
 
+    return combinedMetrics;
+  }
+})
+
+export const getMetricsDone = query({
+  args: {
+    id: v.id("tasks")
+  },
+  handler: async (ctx, args) => {
+    const models_id = args.id;
+
+    const [lossData, evalData] = await Promise.all([
+      ctx.db.query("loss").collect(),
+      ctx.db.query("eval").collect()
+    ]);
+
+    const metrics = new Map();
+
+    lossData
+      .filter(l => l.model_id === models_id)
+      .forEach(l => {
+        metrics.set(l.step, { step: l.step, loss: l.loss });
+      });
+
+    evalData
+      .filter(e => e.model_id === models_id)
+      .forEach(e => {
+        const entry = metrics.get(e.step) || { step: e.step };
+        entry.eval = e.loss;
+        metrics.set(e.step, entry);
+      });
+
+    const combinedMetrics = Array.from(metrics.values());
+    console.log(combinedMetrics);
+    
     return combinedMetrics;
   }
 })

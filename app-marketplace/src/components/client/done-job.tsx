@@ -6,6 +6,10 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Download } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useState } from "react"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
+import { EvaluationChart } from "@/components/client/client-3eval-chart"
 
 interface DoneJobProps {
   name: string
@@ -20,25 +24,50 @@ interface Message {
 }
 
 export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobProps) {
+
+  const metrics = useQuery(api.tasks.getMetricsDone, {id: modelId as Id<"tasks">} ) ?? [];
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
 
-  const sendMessage = () => {
+  async function sendMessage(){
     if (!input.trim()) return
 
-    const newMessages = [
+    let newMessage: Message[] = [
       ...messages,
-      { role: 'user', content: input },
-      { role: 'assistant', content: 'This is a sample response. Connect to your API for real responses.' }
+      { role: 'user' , content: input },
     ]
-    setMessages(newMessages)
+
+    setMessages(newMessage)
     setInput('')
+
+    const address = `http://100.66.215.153:4200/inference`;
+    const response = await fetch(address,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        },
+        body: JSON.stringify({ "message": newMessage }),
+      });
+
+    const data = await response.json();
+    console.log(data);
+    newMessage = [
+      ...newMessage,
+      { role: 'assistant', content: data.output }
+    ]
+
+    setMessages(newMessage)
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4">
-      {/* Left Panel - Model Information */}
-      <div className="space-y-4">
+    <div className="grid grid-cols-2 gap-2">
+      {/* Left Panel - Model Info + Evaluation Chart */}
+      <div className="flex flex-col gap-y-2 col-start-1">
         <Card>
           <CardHeader>
             <CardTitle>Model Information</CardTitle>
@@ -61,20 +90,8 @@ export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobPro
                   <TableCell>{modelParams.batchSize}</TableCell>
                 </TableRow>
                 <TableRow>
-                  <TableCell className="font-medium">Epochs</TableCell>
-                  <TableCell>{modelParams.epochs}</TableCell>
-                </TableRow>
-                <TableRow>
                   <TableCell className="font-medium">Optimizer</TableCell>
                   <TableCell>{modelParams.optimizer}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Accuracy</TableCell>
-                  <TableCell>{modelParams.accuracy}%</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Loss</TableCell>
-                  <TableCell>{modelParams.loss}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Training File</TableCell>
@@ -82,10 +99,19 @@ export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobPro
                 </TableRow>
               </TableBody>
             </Table>
-            <Button className="w-full mt-6" onClick={() => window.open(modelParams.weightsUrl)}>
+            <Button style={{cursor:'pointer'}}className="w-full mt-4" onClick={() => window.open(modelParams.weightsUrl)}>
               <Download className="mr-2 h-4 w-4" />
               Download Model Weights
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Evaluation Metrics</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EvaluationChart evaluationData={metrics || []} />
           </CardContent>
         </Card>
       </div>
@@ -129,7 +155,7 @@ export function DoneJob({ name, modelId, trainingFile, modelParams }: DoneJobPro
                   placeholder="Ask your model something..."
                   className="flex-grow p-2 border rounded-md"
                 />
-                <Button onClick={sendMessage}>Send</Button>
+                <Button style={{cursor:'pointer'}} onClick={sendMessage}>Send</Button>
               </div>
             </div>
           </CardContent>

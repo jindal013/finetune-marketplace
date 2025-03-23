@@ -1,9 +1,6 @@
 import json
 import os
-import flask
-import flask_cors
 from dotenv import load_dotenv
-import threading
 import shutil
 
 from convex import ConvexClient
@@ -26,7 +23,6 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
-import requests
 from datetime import datetime
 
 load_dotenv()
@@ -99,7 +95,7 @@ def get_configs_from_firebase(path: str, id: str):
 
 
 
-  log_status(id, f"Loaded training config from firebase")
+  log_status(id, "Loaded training config from firebase")
 
   return training_config
 
@@ -115,7 +111,7 @@ def get_data_from_firebase(path: str, id: str):
   data = data.strip("\n\n") .replace("\n", " ").replace(" ", " ")
   data = [data[i:i+data_size] for i in range(0, len(data), data_size)]
 
-  log_status(id, f"Loaded data from firebase")
+  log_status(id, "Loaded data from firebase")
 
   dataset = []
   setence_length = 6
@@ -145,7 +141,7 @@ def get_data_from_firebase(path: str, id: str):
       writer.writeheader()
       writer.writerows(dataset)
 
-  log_status(id, f"Saved data to dataset.csv")
+  log_status(id, "Saved data to dataset.csv")
 
   return path
 
@@ -266,7 +262,7 @@ class ModelTrainer:
 
     self.model = get_peft_model(self.model, lora_config)
 
-    log_status(self.id, f"Setup finetune params")
+    log_status(self.id, "Setup finetune params")
 
     return lora_config
 
@@ -300,7 +296,7 @@ class ModelTrainer:
     ds = ds.train_test_split(test_size=self.cfg.test_size)
     ds['test'] = ds['test'].shuffle(seed=seed).select(range(1))
 
-    log_status(self.id, f"Setup dataset")
+    log_status(self.id, "Setup dataset")
 
     return ds['train'], ds['test']
 
@@ -310,7 +306,11 @@ class ModelTrainer:
     lora_config = self.lora_config
     train_data, test_data = self._setup_dataset()
 
-    log_status(self.id, f"Starting training")
+    log_status(self.id, "Starting training")
+
+    if os.path.exists("./job/checkpoints"):
+      shutil.rmtree("./job/checkpoints")
+
     trainer = SFTTrainer(
       model=self.model,
       train_dataset=train_data,
@@ -340,14 +340,30 @@ class ModelTrainer:
 
     trainer.train()
 
-    log_status(self.id, f"Training completed")
-    log_status(self.id, f"Uploading to firebase")
+    log_status(self.id, "Training completed")
+    log_status(self.id, "Uploading to firebase")
 
-    self.upload_to_firebase("./job/checkpoints")
+    # self.upload_to_firebase("./job/checkpoints")
 
-    log_status(self.id, f"Upload completed")
 
-    shutil.rmtree("./job")
+    output_dir = "./job/checkpoints"
+    for file in os.listdir(output_dir):
+      file_path = os.path.join(output_dir, file)
+      if os.path.isdir(file_path):
+        output_dir = file_path
+
+    global modelInference
+    global tokenizerInference
+
+    tokenizerInference = AutoTokenizer.from_pretrained(output_dir)
+    modelInference = AutoModelForCausalLM.from_pretrained(output_dir, device_map=self.device)
+
+    log_status(self.id, "Upload completed")
+
+    try:
+      modelInference = torch.compile(modelInference)
+    except:
+      pass
 
   def upload_to_firebase(self, base_dir):
     directories = [base_dir]
@@ -381,6 +397,7 @@ def handle_train():
     global num_steps
     num_steps = 0
 
+
     firebase_path = prompt['firebase_path']
     id = prompt['id']
 
@@ -392,7 +409,33 @@ def handle_train():
 
     return jsonify({"status": "success"})
 
+def reverse_string(s: str) -> str:
+    return s[::-1]
 
+
+@app.route('/inference', methods=['POST'])
+def handle_inference():
+  if request.method == 'POST':
+    prompt = request.get_json()
+    content = prompt['message']
+    print(content)
+
+    global modelInference
+    global tokenizerInference
+
+    input_ids = tokenizerInference.apply_chat_template(content, truncation=True, add_generation_prompt=True, return_tensors="pt").to("mps")
+
+    outputs = modelInference.generate(
+        input_ids=input_ids,
+        max_new_tokens=60,
+        do_sample=True,
+        temperature=0.7,
+        use_cache=True,
+    )
+
+    output = tokenizerInference.batch_decode(outputs, skip_special_tokens=True)[0]
+    output = output.split("model")[-1]
+    return jsonify({"status": "success", "output": output})
 
 @app.route("/", methods=["GET"])
 def index():

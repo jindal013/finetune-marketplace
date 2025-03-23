@@ -14,10 +14,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Upload } from "lucide-react"
+import { getStorage, ref, uploadBytes } from "firebase/storage"
+import { initializeApp, getApps} from "firebase/app"
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { storage } from "@/lib/firebase"
-import { ref, uploadBytes } from "firebase/storage"
 
 import * as React from "react"
 
@@ -31,7 +31,20 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+const firebaseConfig = {
+  apiKey: "AIzaSyBz0XRFZjisjl2m2kjefJwt5ydxUc5FabA",
+  authDomain: "finetunemarketplace-1323f.firebaseapp.com",
+  databaseURL: "https://finetunemarketplace-1323f-default-rtdb.firebaseio.com",
+  projectId: "finetunemarketplace-1323f",
+  storageBucket: "finetunemarketplace-1323f.firebasestorage.app",
+  messagingSenderId: "163760710265",
+  appId: "1:163760710265:web:676a8e7c5116ad6661eaa8",
+  measurementId: "G-2HQ21J89S1"
+};
 
+
+let app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+const storage = getStorage(app)
 
 export function JobPopup() {
   const [file, setFile] = React.useState<File | null>(null)
@@ -76,7 +89,7 @@ export function JobPopup() {
 
 
       console.log('createintg job')
-      await createJob({ name: config.jobName, firebasePath: `${firebasePath}`, status: "queued" })
+      await createJob({ name: config.jobName, firebasePath: `${firebasePath}`, status: "queued", config: config })
 
       window.location.href = "/client";
     } catch (error) {
@@ -88,7 +101,7 @@ export function JobPopup() {
     <Dialog>
       <DialogTrigger asChild>
         <Button
-          style={{cursor: 'pointer'}}
+          style={{cursor:"pointer"}}
           size="lg"
           className="text-lg px-8 py-6 shadow-lg transition-all hover:scale-105 hover:shadow-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
         >
@@ -255,7 +268,7 @@ export function JobPopup() {
 
         </div>
         <DialogFooter>
-          <Button style={{cursor: 'pointer'}} type="submit" onClick={submitQuery}>Submit Training Job</Button>
+          <Button style={{cursor:'pointer'}}type="submit" onClick={submitQuery}>Submit Training Job</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

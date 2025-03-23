@@ -62,6 +62,9 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
         status: "training"
       });
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 300000); 
+
       const response = await fetch('http://100.66.215.153:4200/train', {
         method: 'POST',
         headers: {
@@ -71,6 +74,7 @@ export function BackloggedJobsTable({ data, variant = 'trainer' }: BackloggedJob
           'Access-Control-Allow-Headers': 'Content-Type'
         },
         body: JSON.stringify({ "firebase_path": firebasePath, "id": id}),
+        signal: controller.signal
       });
 
       if (!response.ok) {

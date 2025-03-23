@@ -3,6 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import {Id} from "../../../convex/_generated/dataModel"
+import { EvaluationChart } from "@/components/client/client-3eval-chart"
+
 interface DoneJobProps {
   name: string
   modelId: string
@@ -10,7 +15,10 @@ interface DoneJobProps {
   modelParams: Record<string, string | number>
 }
 
+
 export function DoneJob({ name, modelId,  trainingFile, modelParams }: DoneJobProps) {
+  const metrics = useQuery(api.tasks.getMetricsDone, {id: modelId as Id<"tasks">} ) ?? [];
+
   return (
     <div className="grid grid-cols-2 gap-4">
       <Card className="col-span-2">
@@ -74,6 +82,14 @@ export function DoneJob({ name, modelId,  trainingFile, modelParams }: DoneJobPr
               {modelParams.trainingLogs || "No logs available"}
             </pre>
           </ScrollArea>
+        </CardContent>
+      </Card>
+      <Card className="col-start-1 row-start-3">
+        <CardHeader>
+          <CardTitle>Evaluation Metrics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <EvaluationChart evaluationData={metrics || []} />
         </CardContent>
       </Card>
     </div>
