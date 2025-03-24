@@ -98,6 +98,8 @@ export function JobPopup() {
         config: config,
       });
 
+      // send post to trainer client 
+
       window.location.href = "/client";
     } catch (error) {
       console.log(error);
