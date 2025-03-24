@@ -42,13 +42,13 @@ Priority queue system to optimize job allocation.
 **Real-Time Insights:** Live updates ensure transparency in model performance and progress.
 Once fine-tuned, users can immediately chat with their custom model—unlocking powerful, tailored AI capabilities without technical barriers.
 
-##Accomplishments
+## Accomplishments
 -Successfully built a decentralized AI fine-tuning platform that connects clients with trainers to optimize model training efficiency.
 -Streamlined the model fine-tuning process, allowing non-technical users to customize AI models with ease.
 -Lowered the cost of LLM fine-tuning by enabling users to leverage decentralized compute resources.
 Automated deployment of fine-tuned models, giving clients full control over their AI solutions.
 
-##What We Learned
+## What We Learned
 -Optimizing Compute Distribution: We explored how to allocate training jobs across distributed machines efficiently
 -Automating the Deployment Pipeline: We streamlined the process of automatically deploying fine-tuned models to cloud platforms, removing manual intervention for end users
 
